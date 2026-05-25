@@ -1,0 +1,11 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Transversal.DTOs
+{
+    public class EmailDTO
+    {
+        public required string Email { get; set; }
+    }
+}

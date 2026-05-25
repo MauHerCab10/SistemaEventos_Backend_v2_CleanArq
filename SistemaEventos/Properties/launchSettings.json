@@ -1,0 +1,41 @@
+{
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5108", //(http)
+      "launchBrowser": true,
+      "launchUrl": "swagger"
+    },
+    "https": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7266;http://localhost:5108", //(https;http) -> Esto le dice a .NET y a VS q levante la misma aplicación escuchando en dos puertos diferentes al mismo tiempo
+      "launchBrowser": true,
+      "launchUrl": "swagger"
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:54766/", //IIS Express (http)
+      "sslPort": 44357 //IIS Express (https)
+    }
+  }
+}
