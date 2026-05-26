@@ -1,7 +1,6 @@
 <Solution>
-  <Project Path="Datos/3.Datos.csproj" Id="eea96d09-6727-4c3a-8a01-23c90e62ec3b" />
-  <Project Path="Negocio/2.Negocio.csproj" Id="f8bcafd8-dc16-441c-8c02-619067123efd" />
-  <Project Path="Servicio/4.Servicio.csproj" Id="83de3f75-f8c6-4fc8-824f-38248e314bb6" />
-  <Project Path="SistemaEventos/1.SistemaEventos.csproj" />
-  <Project Path="Transversal/5.Transversal.csproj" Id="0d061e05-94c9-40b3-b062-46e3e5562cab" />
+  <Project Path="Domain/SistemaEventos.Domain.csproj" />
+  <Project Path="Application/SistemaEventos.Application.csproj" />
+  <Project Path="Infrastructure/SistemaEventos.Infrastructure.csproj" />
+  <Project Path="API/SistemaEventos.Server.csproj" />
 </Solution>

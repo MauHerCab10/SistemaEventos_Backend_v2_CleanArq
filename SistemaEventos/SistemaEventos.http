@@ -1,6 +1,0 @@
-@SistemaEventos_HostAddress = http://localhost:5108
-
-GET {{SistemaEventos_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
