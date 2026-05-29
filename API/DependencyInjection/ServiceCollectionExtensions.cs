@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +6,8 @@ using SistemaEventos.Application.Interfaces.Services;
 using SistemaEventos.Infrastructure.DependencyInjection;
 using SistemaEventos.Server.Middleware;
 using SistemaEventos.Server.Services;
+using System.Security.Claims;
+using System.Text;
 
 namespace SistemaEventos.Server.DependencyInjection;
 
@@ -14,46 +15,72 @@ public static class ServiceCollectionExtensions
 {
     private const string CorsPolicyName = "PolicyCORS";
 
-    public static IServiceCollection InicializarServidor(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static IServiceCollection RegistroConfiguracionServicios(this IServiceCollection services, IConfiguration configuration)
     {
         // Add services to the container.
 
         services.AddControllers();
-        services.AddHttpContextAccessor();
+        //services.AddAuthentication();
+        services.AddAuthorization();
+
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        //Guardar en memoria Caché todas las caché de la aplicación (plantillas de los correos y fechas con hora de la última actividad por cada usuario q realice una petición)
+        services.AddMemoryCache();
+
+        //Capturar el contexto HTTP del servidor para ser usado dentro de la clase de una biblioteca de clases
+        services.AddHttpContextAccessor();
+
+        //// Configurar sesiones
+        //services.AddDistributedMemoryCache();
+        //services.AddSession(options =>
+        //{
+        //    // Se le da a la sesión del servidor un tiempo de vida MAYOR q el q tiene "SessionTimeOut", esto evita que el servidor borre la sesión antes de que 'SessionTimeoutMiddleware' la verifique, esto para evitar q se pisen los tiempos
+        //    options.IdleTimeout = TimeSpan.FromMinutes(Convert.ToInt32(configuration["SessionTimeOut"]!) + 1);
+        //    options.Cookie.HttpOnly = true;
+        //    options.Cookie.IsEssential = true;
+        //});
+
+        //Inyección de Dependencias
         services.AddApplication();
         services.AddInfrastructure(configuration);
         services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IAccountUrlBuilder, AccountUrlBuilder>();
         services.AddScoped<IFrontendUrlBuilder, AccountUrlBuilder>();
 
+        //JSON Web Token (JWT) configuration
         services.AddAuthentication(options =>
         {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         })
-        .AddJwtBearer(options =>
+        .AddJwtBearer(jwtConfig =>
         {
-            options.RequireHttpsMetadata = false;
-            options.SaveToken = true;
-            options.TokenValidationParameters = new TokenValidationParameters
+            jwtConfig.RequireHttpsMetadata = false;
+            jwtConfig.SaveToken = true;
+
+            //configuración y parametrización del AccessToken
+            jwtConfig.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = true,
-                ValidateIssuer = true,
-                ValidIssuer = configuration["JwtSettings:Issuer"],
-                ValidateAudience = true,
-                ValidAudience = configuration["JwtSettings:Audience"],
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero,
+                ValidateIssuerSigningKey = true, //verifica la firma del token usando la clave secreta (SecretKey). Esto garantiza que nadie haya modificado el token
+                ValidateIssuer = true, //comprueba que el token proviene del emisor correcto ("sistemaeventos-api.com")
+                ValidIssuer = configuration["JwtSettings:Issuer"], //valor esperado del emisor (JwtSettings:Issuer)
+                ValidateAudience = true, //asegura que el token esté destinado a esta API ("sistemaeventos-app.com")
+                ValidAudience = configuration["JwtSettings:Audience"], //valor esperado de la audiencia (JwtSettings:Audience)
+                ValidateLifetime = false, //controla si el tiempo de vida del Token será verificado durante la validación (lo valido manualmente en AdministradorHeadersMiddleware)
+                ClockSkew = TimeSpan.Zero, //elimina la tolerancia por desfase de reloj
+                NameClaimType = ClaimTypes.NameIdentifier, //indican qué claim se usará como nombre del usuario
+                RoleClaimType = ClaimTypes.Role, //indican qué claim se usará como rol del usuario
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"] ?? string.Empty))
+                    Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]!) //la clave secreta que se usa para validar la firma del token. Si no coincide, el token es inválido
+                )
             };
 
             //configuración para obtener el AccessToken de las Cookies
-            options.Events = new JwtBearerEvents
+            jwtConfig.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>
                 {
@@ -81,7 +108,7 @@ public static class ServiceCollectionExtensions
             };
         });
 
-        services.AddAuthorization();
+        //Habilitar CORS
         services.AddCors(options =>
         {
             options.AddPolicy(CorsPolicyName, policy =>
@@ -89,8 +116,9 @@ public static class ServiceCollectionExtensions
                 policy
                     .WithOrigins(
                         configuration["Frontend_URLs:Desarrollo"] ?? string.Empty,
-                        configuration["Frontend_URLs:Produccion"] ?? string.Empty)
-                    .AllowCredentials()
+                        configuration["Frontend_URLs:Produccion"] ?? string.Empty
+                    )
+                    .AllowCredentials() //permite cargar las cookies en el navegador
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
@@ -99,30 +127,56 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static WebApplication UsarServidor(this WebApplication app, IWebHostEnvironment environment)
+    public static void ConstruccionConfiguracionAppWeb(this IServiceCollection services, IConfiguration configuration, WebApplication app)
     {
-        if (environment.IsDevelopment())
+        if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
-        }
-        else
-        {
-            app.UseHsts();
+
+            app.MapOpenApi();
         }
 
         app.UseCors(CorsPolicyName);
+
+        //Para control y manejo de Cookies
         app.UseHttpsRedirection();
-        app.UseRouting();
+        app.UseHsts();
 
         //Middlewares (el orden de ejecución va de arriba para abajo)
         app.UseMiddleware<AdministradorHeadersMiddleware>();
         //app.UseMiddleware<SessionTimeoutMiddleware>(); //se apaga ya q en el Frontend se valida la actividad del usuario (este middleware solo tiene en cuenta las peticiones q lleguen al Backend)
 
-        app.UseAuthentication();
+        //Content Security Policy (CSP) -> middleware global de seguridad
+        app.Use(async (context, next) =>
+        {
+            string csp;
+
+            if (app.Environment.IsDevelopment())
+            {
+                csp = "default-src 'self'; " +
+                      $"connect-src 'self' {configuration["Frontend_URLs:Desarrollo"]!}; " +
+                      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                      "style-src 'self' 'unsafe-inline';";
+            }
+            else
+            {
+                csp = "default-src 'self'; " +
+                      $"connect-src 'self' {configuration["Frontend_URLs:Produccion"]!}; " +
+                      "script-src 'self'; " +
+                      "style-src 'self';";
+            }
+
+            context.Response.Headers["Content-Security-Policy"] = csp;
+
+            await next();
+        });
+
+        //app.UseAuthentication();
         app.UseAuthorization();
+
         app.MapControllers();
 
-        return app;
+        app.Run();
     }
 }
