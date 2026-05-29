@@ -4,5 +4,5 @@ namespace SistemaEventos.Application.Interfaces.Persistence;
 
 public interface IPlantillaCorreoRepository
 {
-    Task<List<PlantillaCorreo>> ObtenerPlantillasCorreoAsync(CancellationToken cancellationToken = default);
+    Task<List<PlantillaCorreo>> ObtenerPlantillasCorreo(CancellationToken cancellationToken = default);
 }

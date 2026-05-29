@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class UsuarioGoogleRequestDto
+public class UsuarioGoogleRequestDTO
 {
     public string GoogleSub { get; set; } = string.Empty;
 

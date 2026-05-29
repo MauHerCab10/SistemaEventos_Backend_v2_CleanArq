@@ -7,46 +7,62 @@ namespace SistemaEventos.Infrastructure.Services;
 
 public class PasswordHasherService : IPasswordHasher
 {
-    public string Hash(string value)
+    //Encripta la Contraseña generando un Hash seguro[Hashing con salt + algoritmo lento(PBKDF2, bcrypt o Argon2)] (Argon2 es recomendado por OWASP y NIST)
+    public string EncriptarContraseña(string value)
     {
+        //Salt aleatorio 16 bytes
         var salt = RandomNumberGenerator.GetBytes(16);
 
         var config = new Argon2Config
         {
-            Type = Argon2Type.HybridAddressing,
+            Type = Argon2Type.HybridAddressing, //Argon2 → más seguro
             Version = Argon2Version.Nineteen,
-            TimeCost = 4,
-            MemoryCost = 1024 * 64,
-            Lanes = 4,
-            Threads = Environment.ProcessorCount,
+            TimeCost = 4, //Cantidad de iteraciones
+            MemoryCost = 1024 * 64, //64 MB de RAM (recomendado)
+            Lanes = 4, //Número de hilos paralelos permitidos (recomendado)
+            Threads = Environment.ProcessorCount, //Número de hilos a utilizar
             Salt = salt,
-            Password = Encoding.UTF8.GetBytes(value),
-            HashLength = 32
+            Password = Encoding.UTF8.GetBytes(value), //Contraseña a encriptar
+            HashLength = 32 //256 bits de salida
         };
 
-        return Argon2.Hash(config);
+        //Contraseña hasheada generada
+        string encodedHash = Argon2.Hash(config);
+        return encodedHash;
     }
 
-    public bool Verify(string plainText, string hash)
+    //Verifica la contraseña con Hash suministrada
+    public bool VerificarContrasena(string contrasenaPlana, string contrasenaHashAlmacenada)
     {
-        return Argon2.Verify(hash, plainText);
+        return Argon2.Verify(contrasenaHashAlmacenada, contrasenaPlana);
     }
 
+    //Genera el GUID q va estar incorporado en la URL para 'ConfirmarCuenta' y 'RestablecerContrasena'
     public string GenerarGuid()
     {
-        var guid = Guid.NewGuid().ToString("N");
+        //Generar un GUID único
+        var guid = Guid.NewGuid().ToString("N"); //N = texto sin guiones
+
+        // Agregar un componente variable (marca de tiempo)
         var data = guid + DateTime.Now.Ticks;
 
-        using var sha = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(data);
-        var hash = sha.ComputeHash(bytes);
-
-        var tokenBuilder = new StringBuilder();
-        foreach (var value in hash)
+        // Crear un hash SHA256
+        using (SHA256 sha = SHA256.Create())
         {
-            tokenBuilder.Append(value.ToString("x2"));
-        }
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
+            byte[] hash = sha.ComputeHash(bytes);
 
-        return tokenBuilder.ToString();
+            // Convertir el hash a una cadena hexadecimal
+            StringBuilder tokenBuilder = new StringBuilder();
+            foreach (byte b in hash)
+            {
+                tokenBuilder.Append(b.ToString("x2"));
+            }
+
+            //Token final generado
+            string token = tokenBuilder.ToString();
+            return token;
+        }
     }
+
 }

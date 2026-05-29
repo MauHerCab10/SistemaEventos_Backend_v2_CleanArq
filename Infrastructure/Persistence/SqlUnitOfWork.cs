@@ -14,6 +14,7 @@ public class SqlUnitOfWork : IUnitOfWork
         _connectionFactory = connectionFactory;
     }
 
+    //SE RECOMIENDA DEJARLO, ya q es una sobrecarga útil para operaciones transaccionales sin retorno
     public Task ExecuteAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken = default)
     {
         return ExecuteAsync<object?>(
@@ -25,6 +26,10 @@ public class SqlUnitOfWork : IUnitOfWork
             cancellationToken);
     }
 
+    //Sobrecarga genérica de ExecuteAsync para manejar la conexión y transaccionarla de forma eficiente y segura para los métodos de todos los repositorios
+    //Si ya existe una conexión activa, se reutiliza; de lo contrario, se crea una nueva conexión y se inicia una transacción
+    //El método recibe una función asíncrona q representa la acción a ejecutar dentro de la transacción
+    //Al finalizar la acción, valida si toda la transacción fue exitosa o se revierte en caso de error, asegurando q todos los recursos se liberen adecuadamente
     public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken = default)
     {
         if (_connectionContext.Connection is not null)
@@ -34,7 +39,7 @@ public class SqlUnitOfWork : IUnitOfWork
 
         await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
-        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+        await using var transaction = (SqlTransaction) await connection.BeginTransactionAsync(cancellationToken);
 
         _connectionContext.Connection = connection;
         _connectionContext.Transaction = transaction;
@@ -56,4 +61,5 @@ public class SqlUnitOfWork : IUnitOfWork
             _connectionContext.Transaction = null;
         }
     }
+
 }

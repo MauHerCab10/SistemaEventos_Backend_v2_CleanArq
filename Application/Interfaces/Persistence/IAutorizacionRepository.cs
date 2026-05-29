@@ -4,22 +4,27 @@ namespace SistemaEventos.Application.Interfaces.Persistence;
 
 public interface IAutorizacionRepository
 {
-    Task<HistorialRefreshToken?> ConsultarUltimoHistorialRefreshTokensPorUsuarioAsync(
+    Task<HistorialRefreshToken?> ConsultarUltimoHistorialRefreshTokensPorUsuario(
         int idUsuario,
         string? accessToken = null,
         string? refreshToken = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
-    Task<bool> GuardarHistorialRefreshTokenDeUsuarioAsync(
+    Task<bool> GuardarHistorialRefreshTokenDeUsuario(
         HistorialRefreshToken historialRefreshToken,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
-    Task<bool> ActualizarHistorialRefreshTokenDeUsuarioAsync(
+    Task<bool> ActualizarHistorialRefreshTokenDeUsuario(
         int idHistorialToken,
         string accessToken,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
-    Task<bool> EliminarHistorialRefreshTokensPorUsuarioAsync(
+    Task<bool> EliminarHistorialRefreshTokensPorUsuario(
         int idUsuario,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
+
 }

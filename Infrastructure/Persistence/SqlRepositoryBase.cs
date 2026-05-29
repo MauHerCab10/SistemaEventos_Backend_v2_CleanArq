@@ -14,7 +14,8 @@ public abstract class SqlRepositoryBase
         _connectionFactory = connectionFactory;
     }
 
-    protected async Task<T> WithConnectionAsync<T>(Func<SqlConnection, SqlTransaction?, Task<T>> action, CancellationToken cancellationToken)
+    //Si ya existe una conexión activa, se reutiliza; de lo contrario, se crea una nueva conexión, para evitar repetir en cada método de repositorio el código de crear y abrir la conexión
+    protected async Task<T> ManageConnection<T>(Func<SqlConnection, SqlTransaction?, Task<T>> action, CancellationToken cancellationToken)
     {
         if (_connectionContext.Connection is not null)
         {
@@ -26,6 +27,7 @@ public abstract class SqlRepositoryBase
         return await action(connection, null);
     }
 
+    //Crea un SqlCommand configurado para ejecutar un SP, utilizando la conexión y transacción (si existe) proporcionadas, y establece el tipo de comando como StoredProcedure
     protected SqlCommand CreateStoredProcedureCommand(string storedProcedure, SqlConnection connection, SqlTransaction? transaction)
     {
         var command = transaction is null

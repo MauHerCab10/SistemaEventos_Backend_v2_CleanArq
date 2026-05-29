@@ -13,30 +13,33 @@ public class PlantillaCorreoProvider : IPlantillaCorreoProvider
     private readonly IMemoryCache _memoryCache;
     private readonly IPlantillaCorreoRepository _plantillaCorreoRepository;
 
+    // El constructor recibe la configuración de la aplicación para obtener la clave de caché, así como las dependencias necesarias para acceder a la caché y al repositorio de plantillas de correo
     public PlantillaCorreoProvider(
         IConfiguration configuration,
         IMemoryCache memoryCache,
         IPlantillaCorreoRepository plantillaCorreoRepository)
     {
-        _cacheKey = configuration["Plantillas_Correos_Cache_Key"] ?? "PlantillasCorreo";
+        _cacheKey = configuration["Plantillas_Correos_Cache_Key"]!;
         _memoryCache = memoryCache;
         _plantillaCorreoRepository = plantillaCorreoRepository;
     }
 
-    public async Task<PlantillaCorreo?> ObtenerPorTipoAsync(PlantillasCorreoEnum tipoPlantilla, CancellationToken cancellationToken = default)
+    //Obtiene la plantilla de correo correspondiente al tipo de plantilla solicitado, utilizando caché para optimizar el rendimiento y reducir las consultas a la BD
+    public async Task<PlantillaCorreo?> ObtenerPlantillaPorTipo(PlantillasCorreoEnum tipoPlantilla, CancellationToken cancellationToken = default)
     {
-        var plantillas = await ObtenerPlantillasAsync(cancellationToken);
+        var plantillas = await ObtenerPlantillas(cancellationToken);
         return plantillas.FirstOrDefault(plantilla => plantilla.Nombre == tipoPlantilla.ToString());
     }
 
-    private async Task<List<PlantillaCorreo>> ObtenerPlantillasAsync(CancellationToken cancellationToken)
+    //Obtiene de BD las plantillas de los correos a enviar ('ConfirmarCorreo' y 'RestablecerContrasena') y las deja cargadas en caché para posteriores usos
+    private async Task<List<PlantillaCorreo>> ObtenerPlantillas(CancellationToken cancellationToken)
     {
         if (_memoryCache.TryGetValue(_cacheKey, out List<PlantillaCorreo>? plantillas) && plantillas is not null)
         {
             return plantillas;
         }
 
-        plantillas = await _plantillaCorreoRepository.ObtenerPlantillasCorreoAsync(cancellationToken);
+        plantillas = await _plantillaCorreoRepository.ObtenerPlantillasCorreo(cancellationToken);
         _memoryCache.Set(
             _cacheKey,
             plantillas,

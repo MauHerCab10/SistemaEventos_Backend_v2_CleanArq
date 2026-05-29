@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class AuthTokensDto
+public class AuthTokensDTO
 {
     public int IdUsuario { get; set; }
 

@@ -11,18 +11,23 @@ public class CookieService : ICookieService
         _httpContextAccessor = httpContextAccessor;
     }
 
+    //Creación de la cookie de AccessToken
     public void SetCookieAccessToken(string token)
     {
         var context = GetHttpContext();
-        context.Response.Cookies.Append("cookieAccessToken", token, BuildCookieOptions(_configuration.GetValue<int>("JwtSettings:AccessToken_ExpirationTime")));
+        var cookieOptionsAT = BuildCookieOptions(_configuration.GetValue<int>("JwtSettings:AccessToken_ExpirationTime")); //AccessToken
+        context.Response.Cookies.Append("cookieAccessToken", token, cookieOptionsAT);
     }
 
+    //Creación de la cookie de RefreshToken
     public void SetCookieRefreshToken(string token)
     {
         var context = GetHttpContext();
-        context.Response.Cookies.Append("cookieRefreshToken", token, BuildCookieOptions(_configuration.GetValue<int>("JwtSettings:RefreshToken_ExpirationTime")));
+        var cookieOptionsRT = BuildCookieOptions(_configuration.GetValue<int>("JwtSettings:RefreshToken_ExpirationTime")); //RefreshToken
+        context.Response.Cookies.Append("cookieRefreshToken", token, cookieOptionsRT);
     }
 
+    //Eliminación de las cookies en el navegador del usuario cuando la respuesta llegue al frontend
     public void EliminarCookiesDelUsuario()
     {
         var context = GetHttpContext();
@@ -44,12 +49,14 @@ public class CookieService : ICookieService
         });
     }
 
+    //
     private HttpContext GetHttpContext()
     {
         return _httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("No HttpContext available.");
     }
 
+    //
     private static CookieOptions BuildCookieOptions(int expirationMinutes)
     {
         return new CookieOptions

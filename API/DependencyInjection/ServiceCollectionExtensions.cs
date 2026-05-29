@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using SistemaEventos.Application.DependencyInjection;
 using SistemaEventos.Application.Interfaces.Services;
 using SistemaEventos.Infrastructure.DependencyInjection;
 using SistemaEventos.Server.Middleware;
@@ -13,16 +14,20 @@ public static class ServiceCollectionExtensions
 {
     private const string CorsPolicyName = "PolicyCORS";
 
-    public static IServiceCollection AddServer(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static IServiceCollection InicializarServidor(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
+        // Add services to the container.
+
         services.AddControllers();
         services.AddHttpContextAccessor();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        services.AddApplication();
         services.AddInfrastructure(configuration);
         services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IAccountUrlBuilder, AccountUrlBuilder>();
+        services.AddScoped<IFrontendUrlBuilder, AccountUrlBuilder>();
 
         services.AddAuthentication(options =>
         {
@@ -47,23 +52,30 @@ public static class ServiceCollectionExtensions
                     Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"] ?? string.Empty))
             };
 
+            //configuración para obtener el AccessToken de las Cookies
             options.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>
                 {
-                    var cookieToken = context.Request.Cookies["cookieAccessToken"];
-                    if (!string.IsNullOrWhiteSpace(cookieToken))
-                    {
-                        context.Token = cookieToken;
-                        return Task.CompletedTask;
-                    }
+                    //Primero intenta leer la Cookie del header Authorization
+                    var token = context.Request.Headers["Authorization"]
+                        .FirstOrDefault()?
+                        .Split(" ")
+                        .Last();
 
-                    var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
-                    if (!string.IsNullOrWhiteSpace(authorizationHeader) && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        context.Token = authorizationHeader[7..].Trim();
-                    }
+                    ////Si no está en el header, busca como tal en la Cookie
+                    //if (string.IsNullOrEmpty(token))
+                    //    token = context.Request.Cookies["cookieAccessToken"];
 
+                    //Si encontró el valor del AccessToken, entonces lo asigna y lo retorna
+                    if (!string.IsNullOrEmpty(token))
+                        context.Token = token;
+
+                    return Task.CompletedTask;
+                },
+                OnAuthenticationFailed = context =>
+                {
+                    Console.WriteLine($"Autenticación fallida: {context.Exception.Message}");
                     return Task.CompletedTask;
                 }
             };
@@ -87,7 +99,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static WebApplication UseServer(this WebApplication app, IWebHostEnvironment environment)
+    public static WebApplication UsarServidor(this WebApplication app, IWebHostEnvironment environment)
     {
         if (environment.IsDevelopment())
         {
@@ -102,7 +114,11 @@ public static class ServiceCollectionExtensions
         app.UseCors(CorsPolicyName);
         app.UseHttpsRedirection();
         app.UseRouting();
-        app.UseMiddleware<TokenRefreshMiddleware>();
+
+        //Middlewares (el orden de ejecución va de arriba para abajo)
+        app.UseMiddleware<AdministradorHeadersMiddleware>();
+        //app.UseMiddleware<SessionTimeoutMiddleware>(); //se apaga ya q en el Frontend se valida la actividad del usuario (este middleware solo tiene en cuenta las peticiones q lleguen al Backend)
+
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();

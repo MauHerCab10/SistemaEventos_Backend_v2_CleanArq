@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class UsuarioResponseDto
+public class UsuarioResponseDTO
 {
     public int IdUsuario { get; set; }
 

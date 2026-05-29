@@ -13,23 +13,25 @@ public class EmailSender : IEmailSender
 {
     private readonly ServidorEmailOptions _emailOptions;
 
+    //El constructor recibe la configuración de ServidorEmailOptions a través de IOptions, lo que permite acceder a los valores configurados del "appsettings.json" relacionados con el servidor de correo electrónico
     public EmailSender(IOptions<ServidorEmailOptions> emailOptions)
     {
         _emailOptions = emailOptions.Value;
     }
 
-    public async Task<bool> EnviarAsync(InfoCorreo request, CancellationToken cancellationToken = default)
+    //Envia correos electrónicos al usuario
+    public async Task<bool> EnviarCorreo(InfoCorreo request, CancellationToken cancellationToken = default)
     {
         try
         {
             var email = new MimeMessage();
-            email.From.Add(MailboxAddress.Parse(_emailOptions.Username));
-            email.To.Add(MailboxAddress.Parse(request.Para));
-            email.Subject = request.Asunto;
-            email.Body = new TextPart(TextFormat.Html)
-            {
-                Text = request.Contenido
-            };
+                email.From.Add(MailboxAddress.Parse(_emailOptions.Username));
+                email.To.Add(MailboxAddress.Parse(request.Para));
+                email.Subject = request.Asunto;
+                email.Body = new TextPart(TextFormat.Html)
+                {
+                    Text = request.Contenido
+                };
 
             using var smtp = new SmtpClient();
             await smtp.ConnectAsync(_emailOptions.Host, _emailOptions.Port, SecureSocketOptions.StartTls, cancellationToken);

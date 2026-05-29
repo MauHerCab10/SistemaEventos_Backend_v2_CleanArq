@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class UsuarioRegistroRequestDto
+public class UsuarioRegistroRequestDTO
 {
     public string NombreApellido { get; set; } = string.Empty;
 

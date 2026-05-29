@@ -12,9 +12,10 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
     {
     }
 
-    public Task<bool> RegistrarUsuarioAsync(Usuario usuario, CancellationToken cancellationToken = default)
+
+    public Task<bool> RegistrarUsuario(Usuario usuario, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_InsertarUsuario", connection, transaction);
             command.Parameters.AddWithValue("@NombreApellido", usuario.NombreApellido);
@@ -31,9 +32,10 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
         }, cancellationToken);
     }
 
-    public Task<Usuario?> ConsultarUsuarioPorEmailAsync(string email, CancellationToken cancellationToken = default)
+
+    public Task<Usuario?> ConsultarUsuarioPorEmail(string email, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ConsultarUsuarioPorEmail", connection, transaction);
             command.Parameters.AddWithValue("@Email", email);
@@ -45,9 +47,10 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
         }, cancellationToken);
     }
 
-    public Task<Usuario?> ConsultarUsuarioPorGuidAsync(string guidUsuario, CancellationToken cancellationToken = default)
+
+    public Task<Usuario?> ConsultarUsuarioPorGuid(string guidUsuario, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ConsultarUsuarioPorGuid", connection, transaction);
             command.Parameters.AddWithValue("@GuidUsuario", guidUsuario);
@@ -59,9 +62,10 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
         }, cancellationToken);
     }
 
-    public Task<bool> RestablecerContrasenaAsync(Usuario usuarioRestablecido, CancellationToken cancellationToken = default)
+
+    public Task<bool> RestablecerContrasena(Usuario usuarioRestablecido, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_RestablecerContrasena", connection, transaction);
             command.Parameters.AddWithValue("@IdUsuario", usuarioRestablecido.IdUsuario);
@@ -77,9 +81,10 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
         }, cancellationToken);
     }
 
-    public Task<bool> ActualizarContrasenaAntiguaAsync(string guidAcceso, string contrasenaHash, CancellationToken cancellationToken = default)
+
+    public Task<bool> ActualizarContrasenaAntigua(string guidAcceso, string contrasenaHash, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ActualizarContrasenaAntigua", connection, transaction);
             command.Parameters.AddWithValue("@GuidAcceso", guidAcceso);
@@ -89,9 +94,10 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
         }, cancellationToken);
     }
 
-    public Task<bool> ConfirmarCuentaAsync(string guidAcceso, CancellationToken cancellationToken = default)
+
+    public Task<bool> ConfirmarCuenta(string guidAcceso, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ConfirmarCuenta", connection, transaction);
             command.Parameters.AddWithValue("@GuidAcceso", guidAcceso);
@@ -99,6 +105,7 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
             return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
         }, cancellationToken);
     }
+
 
     private static Usuario MapUsuario(DbDataReader reader)
     {
@@ -115,4 +122,5 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
             GuidActivo = Convert.ToBoolean(reader["EstaActivo"])
         };
     }
+
 }

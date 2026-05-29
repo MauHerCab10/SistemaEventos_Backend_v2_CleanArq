@@ -29,68 +29,72 @@ public class AutorizacionService : IAutorizacionService
         _usuarioRepository = usuarioRepository;
     }
 
-    public async Task<Respuesta<AuthTokensDto>> GenerarTokensConCredencialesAsync(string email, CancellationToken cancellationToken = default)
+    //Método encargado de generar un nuevo AccessToken y RefreshToken para el usuario utilizando sus credenciales (email), garantizando que el usuario exista antes de generar los tokens
+    public async Task<Respuesta<AuthTokensDTO>> GenerarTokensConCredenciales(string email, CancellationToken cancellationToken = default)
     {
         try
         {
-            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmailAsync(email, cancellationToken);
+            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmail(email, cancellationToken);
             if (usuarioEncontrado is null)
             {
-                return Respuesta<AuthTokensDto>.Fail("Usuario no encontrado. Favor validar los datos ingresados.");
+                return Respuesta<AuthTokensDTO>.Fail("Usuario no encontrado. Favor validar los datos ingresados.");
             }
 
-            return await GuardarNuevaSesionAsync(usuarioEncontrado.IdUsuario, cancellationToken);
+            return await GuardarNuevaSesion(usuarioEncontrado.IdUsuario, cancellationToken);
         }
         catch (Exception exception)
         {
-            return Respuesta<AuthTokensDto>.Fail(exception.Message);
+            return Respuesta<AuthTokensDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<AuthTokensDto>> GenerarTokensConRefreshTokenAnteriorAsync(int idUsuario, string accessToken, string refreshToken, CancellationToken cancellationToken = default)
+    ////Método encargado de generar un nuevo AccessToken y RefreshToken para el usuario utilizando el RefreshToken anterior, garantizando que el RefreshToken suministrado exista y esté activo para ese usuario antes de generar los nuevos tokens
+    //public async Task<Respuesta<AuthTokensDTO>> GenerarTokensConRefreshTokenAnterior(int idUsuario, string accessToken, string refreshToken, CancellationToken cancellationToken = default)
+    //{
+    //    try
+    //    {
+    //        var refreshTokenEncontrado = await _autorizacionRepository
+    //            .ConsultarUltimoHistorialRefreshTokensPorUsuario(idUsuario, accessToken, refreshToken, cancellationToken);
+
+    //        if (refreshTokenEncontrado is null)
+    //        {
+    //            return Respuesta<AuthTokensDTO>.Fail("El RefreshToken suministrado no existe o no se encuentra activo para ese usuario.");
+    //        }
+
+    //        return await GuardarNuevaSesion(idUsuario, cancellationToken);
+    //    }
+    //    catch (Exception exception)
+    //    {
+    //        return Respuesta<AuthTokensDTO>.Fail(exception.Message);
+    //    }
+    //}
+
+    //Método encargado de generar un nuevo AccessToken para el usuario utilizando el RefreshToken anterior, sin necesidad de generar un nuevo RefreshToken
+    //Antes de actualizar el AccessToken, se valida que el AccessToken y el RefreshToken suministrados existan y estén activos para ese usuario
+    public async Task<Respuesta<AuthTokensDTO>> ActualizarAccessTokenConRefreshTokenAnterior(int idUsuario, string accessToken, string refreshToken, CancellationToken cancellationToken = default)
     {
         try
         {
             var refreshTokenEncontrado = await _autorizacionRepository
-                .ConsultarUltimoHistorialRefreshTokensPorUsuarioAsync(idUsuario, accessToken, refreshToken, cancellationToken);
+                .ConsultarUltimoHistorialRefreshTokensPorUsuario(idUsuario, accessToken, refreshToken, cancellationToken);
 
             if (refreshTokenEncontrado is null)
             {
-                return Respuesta<AuthTokensDto>.Fail("El RefreshToken suministrado no existe o no se encuentra activo para ese usuario.");
-            }
-
-            return await GuardarNuevaSesionAsync(idUsuario, cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            return Respuesta<AuthTokensDto>.Fail(exception.Message);
-        }
-    }
-
-    public async Task<Respuesta<AuthTokensDto>> ActualizarAccessTokenConRefreshTokenAnteriorAsync(int idUsuario, string accessToken, string refreshToken, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var refreshTokenEncontrado = await _autorizacionRepository
-                .ConsultarUltimoHistorialRefreshTokensPorUsuarioAsync(idUsuario, accessToken, refreshToken, cancellationToken);
-
-            if (refreshTokenEncontrado is null)
-            {
-                return Respuesta<AuthTokensDto>.Fail("El AccessToken y/o el RefreshToken suministrados no existen, o el RefreshToken no se encuentra activo para ese usuario.");
+                return Respuesta<AuthTokensDTO>.Fail("El AccessToken y/o el RefreshToken suministrados no existen, o el RefreshToken no se encuentra activo para ese usuario.");
             }
 
             var nuevoAccessToken = _jwtTokenService.GenerarAccessToken(idUsuario);
             var actualizado = await _unitOfWork.ExecuteAsync(
-                ct => _autorizacionRepository.ActualizarHistorialRefreshTokenDeUsuarioAsync(refreshTokenEncontrado.IdHistorialToken, nuevoAccessToken, ct),
+                ct => _autorizacionRepository.ActualizarHistorialRefreshTokenDeUsuario(refreshTokenEncontrado.IdHistorialToken, nuevoAccessToken, ct),
                 cancellationToken);
 
             if (!actualizado)
             {
-                return Respuesta<AuthTokensDto>.Fail("No fue posible actualizar el AccessToken del usuario.");
+                return Respuesta<AuthTokensDTO>.Fail("No fue posible actualizar el AccessToken del usuario.");
             }
 
-            return Respuesta<AuthTokensDto>.Ok(
-                new AuthTokensDto
+            return Respuesta<AuthTokensDTO>.Ok(
+                new AuthTokensDTO
                 {
                     IdUsuario = idUsuario,
                     AccessToken = nuevoAccessToken,
@@ -100,28 +104,30 @@ public class AutorizacionService : IAutorizacionService
         }
         catch (Exception exception)
         {
-            return Respuesta<AuthTokensDto>.Fail(exception.Message);
+            return Respuesta<AuthTokensDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<DateTime?> ConsultarFechaVencimientoRefreshTokenAsync(int idUsuario, CancellationToken cancellationToken = default)
+    //Método encargado de consultar la fecha de vencimiento del RefreshToken activo del usuario
+    public async Task<DateTime?> ConsultarFechaVencimientoRefreshToken(int idUsuario, CancellationToken cancellationToken = default)
     {
-        var refreshTokenEncontrado = await _autorizacionRepository.ConsultarUltimoHistorialRefreshTokensPorUsuarioAsync(idUsuario, cancellationToken: cancellationToken);
+        var refreshTokenEncontrado = await _autorizacionRepository.ConsultarUltimoHistorialRefreshTokensPorUsuario(idUsuario, cancellationToken: cancellationToken);
         return refreshTokenEncontrado?.FechaExpiracion;
     }
 
-    public async Task<Respuesta<bool>> CerrarSesionAsync(int idUsuario, CancellationToken cancellationToken = default)
+    //Método encargado de eliminar todos los tokens activos del usuario para cerrar su sesión, garantizando que no queden tokens válidos después de la operación
+    public async Task<Respuesta<bool>> CerrarSesion(int idUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var tokensUsuario = await _autorizacionRepository.ConsultarUltimoHistorialRefreshTokensPorUsuarioAsync(idUsuario, cancellationToken: cancellationToken);
+            var tokensUsuario = await _autorizacionRepository.ConsultarUltimoHistorialRefreshTokensPorUsuario(idUsuario, cancellationToken: cancellationToken);
             if (tokensUsuario is null)
             {
                 return Respuesta<bool>.Fail($"No existen tokens activos del usuario '{idUsuario}' para eliminar.");
             }
 
             var esExitoso = await _unitOfWork.ExecuteAsync(
-                ct => _autorizacionRepository.EliminarHistorialRefreshTokensPorUsuarioAsync(idUsuario, ct),
+                ct => _autorizacionRepository.EliminarHistorialRefreshTokensPorUsuario(idUsuario, ct),
                 cancellationToken);
 
             if (!esExitoso)
@@ -137,16 +143,19 @@ public class AutorizacionService : IAutorizacionService
         }
     }
 
+    //Este método se encarga de validar un AccessToken utilizando el servicio de generación y validación de tokens JWT
     public bool ValidarToken(string accessToken)
     {
         return _jwtTokenService.ValidarToken(accessToken);
     }
 
-    private async Task<Respuesta<AuthTokensDto>> GuardarNuevaSesionAsync(int idUsuario, CancellationToken cancellationToken)
+    //Se genera un nuevo AccessToken y RefreshToken para el usuario, y guardar el nuevo RefreshToken en la BD
+    //Antes de guardar el nuevo RefreshToken, se eliminan los tokens anteriores del usuario para garantizar que solo exista un par de tokens activo por usuario
+    private async Task<Respuesta<AuthTokensDTO>> GuardarNuevaSesion(int idUsuario, CancellationToken cancellationToken)
     {
         var accessToken = _jwtTokenService.GenerarAccessToken(idUsuario);
         var refreshToken = _jwtTokenService.GenerarRefreshToken();
-        var fechaCreacion = _dateTimeProvider.GetCurrentDateTime();
+        var fechaCreacion = _dateTimeProvider.ObtenerDateTimeActual();
         var fechaExpiracion = _jwtTokenService.ObtenerFechaExpiracionRefreshToken(fechaCreacion);
 
         var historialRefreshToken = new HistorialRefreshToken
@@ -161,18 +170,18 @@ public class AutorizacionService : IAutorizacionService
         var guardado = await _unitOfWork.ExecuteAsync(
             async ct =>
             {
-                await _autorizacionRepository.EliminarHistorialRefreshTokensPorUsuarioAsync(idUsuario, ct);
-                return await _autorizacionRepository.GuardarHistorialRefreshTokenDeUsuarioAsync(historialRefreshToken, ct);
+                await _autorizacionRepository.EliminarHistorialRefreshTokensPorUsuario(idUsuario, ct);
+                return await _autorizacionRepository.GuardarHistorialRefreshTokenDeUsuario(historialRefreshToken, ct);
             },
             cancellationToken);
 
         if (!guardado)
         {
-            return Respuesta<AuthTokensDto>.Fail("Error al momento de generar el AccessToken y el RefreshToken.");
+            return Respuesta<AuthTokensDTO>.Fail("Error al momento de generar el AccessToken y el RefreshToken.");
         }
 
-        return Respuesta<AuthTokensDto>.Ok(
-            new AuthTokensDto
+        return Respuesta<AuthTokensDTO>.Ok(
+            new AuthTokensDTO
             {
                 IdUsuario = idUsuario,
                 AccessToken = accessToken,
@@ -180,4 +189,5 @@ public class AutorizacionService : IAutorizacionService
             },
             "AccessToken y RefreshToken generados correctamente.");
     }
+
 }

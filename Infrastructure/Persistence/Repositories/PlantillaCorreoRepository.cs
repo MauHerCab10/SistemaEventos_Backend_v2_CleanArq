@@ -11,9 +11,10 @@ public class PlantillaCorreoRepository : SqlRepositoryBase, IPlantillaCorreoRepo
     {
     }
 
-    public Task<List<PlantillaCorreo>> ObtenerPlantillasCorreoAsync(CancellationToken cancellationToken = default)
+
+    public Task<List<PlantillaCorreo>> ObtenerPlantillasCorreo(CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             var correoPlantillas = new List<PlantillaCorreo>();
 
@@ -33,4 +34,5 @@ public class PlantillaCorreoRepository : SqlRepositoryBase, IPlantillaCorreoRepo
             return correoPlantillas;
         }, cancellationToken);
     }
+
 }

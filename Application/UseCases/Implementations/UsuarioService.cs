@@ -47,141 +47,145 @@ public class UsuarioService : IUsuarioService
         _plantillaCorreoProvider = plantillaCorreoProvider;
         _usuarioRepository = usuarioRepository;
     }
-
-    public async Task<Respuesta<UsuarioResponseDto>> AutenticarUsuarioAsync(UsuarioLoginRequestDto dtoUsuario, CancellationToken cancellationToken = default)
+    
+    //Autentica a un usuario utilizando sus credenciales (email y contraseña)
+    public async Task<Respuesta<UsuarioResponseDTO>> AutenticarUsuario(UsuarioLoginRequestDTO DTOUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmailAsync(dtoUsuario.Email, cancellationToken);
+            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (usuarioEncontrado is null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
             }
 
-            var contrasenaValidada = _passwordHasher.Verify(dtoUsuario.Contrasena, usuarioEncontrado.ContrasenaHash);
+            var contrasenaValidada = _passwordHasher.VerificarContrasena(DTOUsuario.Contrasena, usuarioEncontrado.ContrasenaHash);
             if (!usuarioEncontrado.Confirmado && !usuarioEncontrado.Restablecer && !string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
             {
-                return Respuesta<UsuarioResponseDto>.Fail($"Falta por confirmar su cuenta. Se envio un correo de solicitud de confirmacion a '{dtoUsuario.Email}'.");
+                return Respuesta<UsuarioResponseDTO>.Fail($"Falta por confirmar su cuenta. Se envio un correo de solicitud de confirmacion a '{DTOUsuario.Email}'.");
             }
 
             if (usuarioEncontrado.Restablecer && !usuarioEncontrado.Confirmado && string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
             {
-                return Respuesta<UsuarioResponseDto>.Fail($"Se ha solicitado restablecer su cuenta. Favor revise la bandeja de su correo '{dtoUsuario.Email}'.");
+                return Respuesta<UsuarioResponseDTO>.Fail($"Se ha solicitado restablecer su cuenta. Favor revise la bandeja de su correo '{DTOUsuario.Email}'.");
             }
 
             if (!contrasenaValidada)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("La contrasena no coincide con la que hay almacenada en el sistema.");
+                return Respuesta<UsuarioResponseDTO>.Fail("La contrasena no coincide con la que hay almacenada en el sistema.");
             }
 
-            var resultadoTokens = await _autorizacionService.GenerarTokensConCredencialesAsync(dtoUsuario.Email, cancellationToken);
+            var resultadoTokens = await _autorizacionService.GenerarTokensConCredenciales(DTOUsuario.Email, cancellationToken);
             if (!resultadoTokens.IsSuccess || resultadoTokens.Valor is null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail(resultadoTokens.Mensaje);
+                return Respuesta<UsuarioResponseDTO>.Fail(resultadoTokens.Mensaje);
             }
 
-            return Respuesta<UsuarioResponseDto>.Ok(
+            return Respuesta<UsuarioResponseDTO>.Ok(
                 MapToResponse(usuarioEncontrado, resultadoTokens.Valor),
                 "Autenticacion exitosa.");
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<UsuarioResponseDto>> RegistrarUsuarioAsync(UsuarioRegistroRequestDto dtoUsuario, CancellationToken cancellationToken = default)
+    //Registra un nuevo usuario en el sistema utilizando los datos proporcionados
+    public async Task<Respuesta<UsuarioResponseDTO>> RegistrarUsuario(UsuarioRegistroRequestDTO DTOUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var existeUsuario = await _usuarioRepository.ConsultarUsuarioPorEmailAsync(dtoUsuario.Email, cancellationToken);
+            var existeUsuario = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (existeUsuario is not null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("El correo electronico proporcionado ya se encuentra registrado en el sistema. Por favor acceda con sus credenciales de acceso.");
+                return Respuesta<UsuarioResponseDTO>.Fail("El correo electronico proporcionado ya se encuentra registrado en el sistema. Por favor acceda con sus credenciales de acceso.");
             }
 
-            var validacion = ValidarRegistro(dtoUsuario.NombreApellido, dtoUsuario.Email, dtoUsuario.Contrasena);
+            var validacion = ValidarRegistro(DTOUsuario.NombreApellido, DTOUsuario.Email, DTOUsuario.Contrasena);
             if (!validacion.IsSuccess)
             {
                 return validacion;
             }
 
-            var fechaActual = _dateTimeProvider.GetCurrentDateTime();
+            var fechaActual = _dateTimeProvider.ObtenerDateTimeActual();
             var usuario = new Usuario
             {
-                NombreApellido = dtoUsuario.NombreApellido,
-                Email = dtoUsuario.Email
+                NombreApellido = DTOUsuario.NombreApellido,
+                Email = DTOUsuario.Email
             };
 
             usuario.PrepararNuevoRegistro(
-                _passwordHasher.Hash(dtoUsuario.Contrasena),
+                _passwordHasher.EncriptarContraseña(DTOUsuario.Contrasena),
                 _passwordHasher.GenerarGuid(),
                 fechaActual,
                 _guidAccessSettings.GuidAccesoExpirationMinutes);
 
-            var respuesta = await _usuarioRepository.RegistrarUsuarioAsync(usuario, cancellationToken);
+            var respuesta = await _usuarioRepository.RegistrarUsuario(usuario, cancellationToken);
             if (!respuesta)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("No se pudo crear su cuenta.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se pudo crear su cuenta.");
             }
 
-            return await EnviarCorreoConPlantillaAsync(
+            return await EnviarCorreoConPlantilla(
                 PlantillasCorreoEnum.ConfirmarCorreo,
                 usuario.NombreApellido,
                 usuario.Email,
-                _accountUrlBuilder.BuildConfirmacionCuentaUrl(usuario.GuidAcceso),
+                _accountUrlBuilder.ArmarUrlConfirmacionCuenta(usuario.GuidAcceso),
                 $"Su cuenta ha sido creada satisfactoriamente. Hemos enviado un mensaje al correo '{usuario.Email}' para confirmar su cuenta.",
                 cancellationToken);
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<UsuarioResponseDto>> OlvidoSuContrasenaAsync(string email, CancellationToken cancellationToken = default)
+    //Permite a un usuario iniciar el proceso de restablecimiento de contraseña proporcionando su correo electrónico
+    public async Task<Respuesta<UsuarioResponseDTO>> OlvidoSuContrasena(string email, CancellationToken cancellationToken = default)
     {
         try
         {
-            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmailAsync(email, cancellationToken);
+            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmail(email, cancellationToken);
             if (usuarioEncontrado is null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("No se encontraron coincidencias con el correo proporcionado.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con el correo proporcionado.");
             }
 
-            var fechaActual = _dateTimeProvider.GetCurrentDateTime();
+            var fechaActual = _dateTimeProvider.ObtenerDateTimeActual();
             usuarioEncontrado.PrepararRestablecimiento(
                 _passwordHasher.GenerarGuid(),
                 fechaActual,
                 _guidAccessSettings.GuidAccesoExpirationMinutes);
 
-            var respuesta = await _usuarioRepository.RestablecerContrasenaAsync(usuarioEncontrado, cancellationToken);
+            var respuesta = await _usuarioRepository.RestablecerContrasena(usuarioEncontrado, cancellationToken);
             if (!respuesta)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("No se pudo restablecer su contrasena.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se pudo restablecer su contrasena.");
             }
 
-            return await EnviarCorreoConPlantillaAsync(
+            return await EnviarCorreoConPlantilla(
                 PlantillasCorreoEnum.RestablecerContrasena,
                 usuarioEncontrado.NombreApellido,
                 usuarioEncontrado.Email,
-                _accountUrlBuilder.BuildRestablecerContrasenaUrl(usuarioEncontrado.GuidAcceso),
+                _accountUrlBuilder.ArmarUrlRestablecerContrasena(usuarioEncontrado.GuidAcceso),
                 "La solicitud de restablecimiento de contrasena fue procesada satisfactoriamente. Por favor revise la bandeja de entrada de su correo electronico para actualizar su contrasena.",
                 cancellationToken);
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<UsuarioResponseDto>> ActualizarContrasenaAntiguaAsync(string guidAcceso, string nuevaContrasena, string confirmacionContrasena, CancellationToken cancellationToken = default)
+    //Permite a un usuario actualizar su contraseña utilizando un enlace de restablecimiento válido
+    public async Task<Respuesta<UsuarioResponseDTO>> ActualizarContrasenaAntigua(string guidAcceso, string nuevaContrasena, string confirmacionContrasena, CancellationToken cancellationToken = default)
     {
         try
         {
             if (nuevaContrasena != confirmacionContrasena)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("Las contrasenas ingresadas no coinciden.");
+                return Respuesta<UsuarioResponseDTO>.Fail("Las contrasenas ingresadas no coinciden.");
             }
 
             var passwordValidation = ValidarFormatoContrasena(nuevaContrasena);
@@ -190,133 +194,137 @@ public class UsuarioService : IUsuarioService
                 return passwordValidation;
             }
 
-            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorGuidAsync(guidAcceso, cancellationToken);
+            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorGuid(guidAcceso, cancellationToken);
             if (usuarioEncontrado is null || !usuarioEncontrado.GuidActivo)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("Solicitud no existe o ya se encuentra invalida.");
+                return Respuesta<UsuarioResponseDTO>.Fail("Solicitud no existe o ya se encuentra invalida.");
             }
 
             if (usuarioEncontrado.GuidValidado || !usuarioEncontrado.GuidActivo)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("El enlace por el cual solicitaste el cambio de contrasena ya se encuentra invalido, ha expirado, o ya habias realizado un cambio de contrasena anteriormente usando este correo.");
+                return Respuesta<UsuarioResponseDTO>.Fail("El enlace por el cual solicitaste el cambio de contrasena ya se encuentra invalido, ha expirado, o ya habias realizado un cambio de contrasena anteriormente usando este correo.");
             }
 
-            var contrasenaHash = _passwordHasher.Hash(nuevaContrasena);
-            var respuesta = await _usuarioRepository.ActualizarContrasenaAntiguaAsync(guidAcceso, contrasenaHash, cancellationToken);
+            var contrasenaHash = _passwordHasher.EncriptarContraseña(nuevaContrasena);
+            var respuesta = await _usuarioRepository.ActualizarContrasenaAntigua(guidAcceso, contrasenaHash, cancellationToken);
 
             return respuesta
-                ? Respuesta<UsuarioResponseDto>.Ok(null, "Contrasena actualizada satisfactoriamente.")
-                : Respuesta<UsuarioResponseDto>.Fail("No se pudo actualizar la contrasena. Favor usar el correo con la ultima solicitud de cambio de contrasena generada.");
+                ? Respuesta<UsuarioResponseDTO>.Ok(null, "Contrasena actualizada satisfactoriamente.")
+                : Respuesta<UsuarioResponseDTO>.Fail("No se pudo actualizar la contrasena. Favor usar el correo con la ultima solicitud de cambio de contrasena generada.");
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<UsuarioResponseDto>> ConfirmarCuentaAsync(string guidAcceso, CancellationToken cancellationToken = default)
+    //Permite a un usuario confirmar su cuenta utilizando un enlace de confirmación válido
+    public async Task<Respuesta<UsuarioResponseDTO>> ConfirmarCuenta(string guidAcceso, CancellationToken cancellationToken = default)
     {
         try
         {
-            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorGuidAsync(guidAcceso, cancellationToken);
+            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorGuid(guidAcceso, cancellationToken);
             if (usuarioEncontrado is null || !usuarioEncontrado.GuidActivo)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("GUID no existe o ya se encuentra invalido. Favor solicite el restablecimiento de su contrasena.");
+                return Respuesta<UsuarioResponseDTO>.Fail("GUID no existe o ya se encuentra invalido. Favor solicite el restablecimiento de su contrasena.");
             }
 
             if (usuarioEncontrado.Confirmado)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("La cuenta ya fue confirmada anteriormente.");
+                return Respuesta<UsuarioResponseDTO>.Fail("La cuenta ya fue confirmada anteriormente.");
             }
 
-            var respuesta = await _usuarioRepository.ConfirmarCuentaAsync(guidAcceso, cancellationToken);
+            var respuesta = await _usuarioRepository.ConfirmarCuenta(guidAcceso, cancellationToken);
             return respuesta
-                ? Respuesta<UsuarioResponseDto>.Ok(null, "Confirmacion de cuenta realizada satisfactoriamente.")
-                : Respuesta<UsuarioResponseDto>.Fail("No se pudo confirmar la cuenta.");
+                ? Respuesta<UsuarioResponseDTO>.Ok(null, "Confirmacion de cuenta realizada satisfactoriamente.")
+                : Respuesta<UsuarioResponseDTO>.Fail("No se pudo confirmar la cuenta.");
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<UsuarioResponseDto>> AutenticarUsuarioGoogleAsync(UsuarioGoogleRequestDto dtoUsuario, CancellationToken cancellationToken = default)
+    //Permite a un usuario autenticarse utilizando su cuenta de Google
+    public async Task<Respuesta<UsuarioResponseDTO>> AutenticarUsuarioGoogle(UsuarioGoogleRequestDTO DTOUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmailAsync(dtoUsuario.Email, cancellationToken);
+            var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (usuarioEncontrado is null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
             }
 
             if (usuarioEncontrado.Restablecer && !usuarioEncontrado.Confirmado && string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
             {
-                return Respuesta<UsuarioResponseDto>.Fail($"Se ha solicitado restablecer su cuenta. Favor revise la bandeja de su correo '{dtoUsuario.Email}'.");
+                return Respuesta<UsuarioResponseDTO>.Fail($"Se ha solicitado restablecer su cuenta. Favor revise la bandeja de su correo '{DTOUsuario.Email}'.");
             }
 
-            var resultadoTokens = await _autorizacionService.GenerarTokensConCredencialesAsync(dtoUsuario.Email, cancellationToken);
+            var resultadoTokens = await _autorizacionService.GenerarTokensConCredenciales(DTOUsuario.Email, cancellationToken);
             if (!resultadoTokens.IsSuccess || resultadoTokens.Valor is null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail(resultadoTokens.Mensaje);
+                return Respuesta<UsuarioResponseDTO>.Fail(resultadoTokens.Mensaje);
             }
 
-            return Respuesta<UsuarioResponseDto>.Ok(
+            return Respuesta<UsuarioResponseDTO>.Ok(
                 MapToResponse(usuarioEncontrado, resultadoTokens.Valor),
                 "Autenticacion exitosa.");
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<UsuarioResponseDto>> RegistrarUsuarioGoogleAsync(UsuarioGoogleRequestDto dtoUsuario, CancellationToken cancellationToken = default)
+    //Permite a un usuario registrar una nueva cuenta asociada a esa dirección de correo electrónico utilizando su cuenta de Google
+    public async Task<Respuesta<UsuarioResponseDTO>> RegistrarUsuarioGoogle(UsuarioGoogleRequestDTO DTOUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var existeUsuario = await _usuarioRepository.ConsultarUsuarioPorEmailAsync(dtoUsuario.Email, cancellationToken);
+            var existeUsuario = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (existeUsuario is not null)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("El correo electronico proporcionado ya se encuentra registrado en el sistema. Por favor acceda con otra cuenta.");
+                return Respuesta<UsuarioResponseDTO>.Fail("El correo electronico proporcionado ya se encuentra registrado en el sistema. Por favor acceda con otra cuenta.");
             }
 
-            var fechaActual = _dateTimeProvider.GetCurrentDateTime();
+            var fechaActual = _dateTimeProvider.ObtenerDateTimeActual();
             var usuario = new Usuario
             {
-                NombreApellido = dtoUsuario.Nombre,
-                Email = dtoUsuario.Email
+                NombreApellido = DTOUsuario.Nombre,
+                Email = DTOUsuario.Email
             };
 
             usuario.PrepararNuevoRegistro(
-                _passwordHasher.Hash(dtoUsuario.GoogleSub),
+                _passwordHasher.EncriptarContraseña(DTOUsuario.GoogleSub),
                 _passwordHasher.GenerarGuid(),
                 fechaActual,
                 _guidAccessSettings.GuidAccesoExpirationMinutes);
 
-            var respuesta = await _usuarioRepository.RegistrarUsuarioAsync(usuario, cancellationToken);
+            var respuesta = await _usuarioRepository.RegistrarUsuario(usuario, cancellationToken);
             if (!respuesta)
             {
-                return Respuesta<UsuarioResponseDto>.Fail("No se pudo crear su cuenta.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se pudo crear su cuenta.");
             }
 
-            return await EnviarCorreoConPlantillaAsync(
+            return await EnviarCorreoConPlantilla(
                 PlantillasCorreoEnum.ConfirmarCorreo,
                 usuario.NombreApellido,
                 usuario.Email,
-                _accountUrlBuilder.BuildConfirmacionCuentaUrl(usuario.GuidAcceso),
+                _accountUrlBuilder.ArmarUrlConfirmacionCuenta(usuario.GuidAcceso),
                 $"Su cuenta ha sido creada satisfactoriamente. Hemos enviado un mensaje al correo '{usuario.Email}' para confirmar su cuenta.",
                 cancellationToken);
         }
         catch (Exception exception)
         {
-            return Respuesta<UsuarioResponseDto>.Fail(exception.Message);
+            return Respuesta<UsuarioResponseDTO>.Fail(exception.Message);
         }
     }
 
-    private static UsuarioResponseDto MapToResponse(Usuario usuario, AuthTokensDto tokens)
+    //Mapea un objeto Usuario y AuthTokensDTO a un UsuarioResponseDTO
+    private static UsuarioResponseDTO MapToResponse(Usuario usuario, AuthTokensDTO tokens)
     {
-        return new UsuarioResponseDto
+        return new UsuarioResponseDTO
         {
             IdUsuario = usuario.IdUsuario,
             NombreUsuario = ObtenerPrimerNombre(usuario.NombreApellido),
@@ -325,6 +333,7 @@ public class UsuarioService : IUsuarioService
         };
     }
 
+    //Obtiene el primer nombre de un nombre completo
     private static string ObtenerPrimerNombre(string nombreCompleto)
     {
         return nombreCompleto
@@ -332,32 +341,35 @@ public class UsuarioService : IUsuarioService
             .FirstOrDefault() ?? nombreCompleto;
     }
 
-    private static Respuesta<UsuarioResponseDto> ValidarRegistro(string nombreApellido, string email, string contrasena)
+    //Valida los datos ingresados por el usuario durante el proceso de registro, asegurando que se cumplan los requisitos de formato para el nombre, correo electrónico y contraseña
+    private static Respuesta<UsuarioResponseDTO> ValidarRegistro(string nombreApellido, string email, string contrasena)
     {
-        if (string.IsNullOrWhiteSpace(nombreApellido))
+        if (string.IsNullOrEmpty(nombreApellido))
         {
-            return Respuesta<UsuarioResponseDto>.Fail("Campo de Nombre y Apellido es obligatorio.");
+            return Respuesta<UsuarioResponseDTO>.Fail("Campo de Nombre y Apellido es obligatorio.");
         }
 
         if (!EmailRegex.IsMatch(email))
         {
-            return Respuesta<UsuarioResponseDto>.Fail("Formato de correo electronico invalido.");
+            return Respuesta<UsuarioResponseDTO>.Fail("Formato de correo electronico invalido.");
         }
 
         return ValidarFormatoContrasena(contrasena);
     }
 
-    private static Respuesta<UsuarioResponseDto> ValidarFormatoContrasena(string contrasena)
+    //Valida que la contraseña cumpla con los requisitos de formato establecidos
+    private static Respuesta<UsuarioResponseDTO> ValidarFormatoContrasena(string contrasena)
     {
         if (contrasena.Length < 12 || !PasswordRegex.IsMatch(contrasena))
         {
-            return Respuesta<UsuarioResponseDto>.Fail("Formato de contrasena invalido. La contrasena debe contener 12 caracteres como minimo, al menos una minuscula, una mayuscula, un numero, un caracter especial y no debe contener espacios.");
+            return Respuesta<UsuarioResponseDTO>.Fail("Formato de contrasena invalido. La contrasena debe contener 12 caracteres como minimo, al menos una minuscula, una mayuscula, un numero, un caracter especial y no debe contener espacios.");
         }
 
-        return Respuesta<UsuarioResponseDto>.Ok(null);
+        return Respuesta<UsuarioResponseDTO>.Ok(null);
     }
 
-    private async Task<Respuesta<UsuarioResponseDto>> EnviarCorreoConPlantillaAsync(
+    //Envía un correo electrónico al usuario utilizando una plantilla específica, personalizando el contenido con su nombre y un enlace relevante para la acción que se está realizando ("confirmación de cuenta" o "restablecimiento de contraseña")
+    private async Task<Respuesta<UsuarioResponseDTO>> EnviarCorreoConPlantilla(
         PlantillasCorreoEnum tipoPlantilla,
         string nombreUsuario,
         string email,
@@ -365,10 +377,10 @@ public class UsuarioService : IUsuarioService
         string mensajeExito,
         CancellationToken cancellationToken)
     {
-        var plantillaCorreo = await _plantillaCorreoProvider.ObtenerPorTipoAsync(tipoPlantilla, cancellationToken);
+        var plantillaCorreo = await _plantillaCorreoProvider.ObtenerPlantillaPorTipo(tipoPlantilla, cancellationToken);
         if (plantillaCorreo is null)
         {
-            return Respuesta<UsuarioResponseDto>.Fail("No fue posible cargar la plantilla del correo.");
+            return Respuesta<UsuarioResponseDTO>.Fail("No fue posible cargar la plantilla del correo.");
         }
 
         var htmlBody = string.Format(plantillaCorreo.Cuerpo, nombreUsuario, url);
@@ -379,9 +391,9 @@ public class UsuarioService : IUsuarioService
             Contenido = htmlBody
         };
 
-        var correoEnviado = await _emailSender.EnviarAsync(infoCorreo, cancellationToken);
+        var correoEnviado = await _emailSender.EnviarCorreo(infoCorreo, cancellationToken);
         return correoEnviado
-            ? Respuesta<UsuarioResponseDto>.Ok(null, mensajeExito)
-            : Respuesta<UsuarioResponseDto>.Fail($"No fue posible enviar el correo a '{email}'.");
+            ? Respuesta<UsuarioResponseDTO>.Ok(null, mensajeExito)
+            : Respuesta<UsuarioResponseDTO>.Fail($"No fue posible enviar el correo a '{email}'.");
     }
 }

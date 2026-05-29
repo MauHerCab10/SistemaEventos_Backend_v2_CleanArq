@@ -3,7 +3,7 @@ using SistemaEventos.Application.Interfaces.Services;
 
 namespace SistemaEventos.Server.Services;
 
-public class AccountUrlBuilder : IAccountUrlBuilder
+public class AccountUrlBuilder : IAccountUrlBuilder, IFrontendUrlBuilder
 {
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
@@ -16,15 +16,24 @@ public class AccountUrlBuilder : IAccountUrlBuilder
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public string BuildConfirmacionCuentaUrl(string guidAcceso)
+    public string ArmarUrlConfirmacionCuenta(string guidAcceso)
     {
         var baseUrl = GetBackendBaseUrl();
-        return $"{baseUrl}/api/Usuario/ConfirmarCuenta?guidAcceso={guidAcceso}";
+        var completeUrl = $"{baseUrl}/api/Usuario/ConfirmarCuenta?guidAcceso={guidAcceso}";
+        return completeUrl;
     }
 
-    public string BuildRestablecerContrasenaUrl(string guidAcceso)
+    public string ArmarUrlRestablecerContrasena(string guidAcceso)
     {
-        return $"{GetFrontendBaseUrl()}/password?guidAcceso={guidAcceso}";
+        var completeUrl = $"{GetFrontendBaseUrl()}/password?guidAcceso={guidAcceso}";
+        return completeUrl;
+    }
+
+    public string ArmarUrlLoginConfirmacion(bool confirmacionExitosa)
+    {
+        var estadoConfirmacion = confirmacionExitosa ? "ok" : "error";
+        var completeUrl = $"{GetFrontendBaseUrl()}/login?confirmacion={estadoConfirmacion}";
+        return completeUrl;
     }
 
     private string GetFrontendBaseUrl()

@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class EventoDto
+public class EventoDTO
 {
     public int IdEvento { get; set; }
 

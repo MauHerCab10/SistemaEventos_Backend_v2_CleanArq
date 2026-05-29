@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class ActualizarContrasenaDto
+public class ActualizarContrasenaDTO
 {
     public required string GuidAcceso { get; set; }
 

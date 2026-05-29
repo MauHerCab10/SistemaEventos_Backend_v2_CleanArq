@@ -4,15 +4,15 @@ namespace SistemaEventos.Application.Interfaces.Persistence;
 
 public interface IUsuarioRepository
 {
-    Task<bool> RegistrarUsuarioAsync(Usuario usuario, CancellationToken cancellationToken = default);
+    Task<bool> RegistrarUsuario(Usuario usuario, CancellationToken cancellationToken = default);
 
-    Task<Usuario?> ConsultarUsuarioPorEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<Usuario?> ConsultarUsuarioPorEmail(string email, CancellationToken cancellationToken = default);
 
-    Task<Usuario?> ConsultarUsuarioPorGuidAsync(string guidUsuario, CancellationToken cancellationToken = default);
+    Task<Usuario?> ConsultarUsuarioPorGuid(string guidUsuario, CancellationToken cancellationToken = default);
 
-    Task<bool> RestablecerContrasenaAsync(Usuario usuarioRestablecido, CancellationToken cancellationToken = default);
+    Task<bool> RestablecerContrasena(Usuario usuarioRestablecido, CancellationToken cancellationToken = default);
 
-    Task<bool> ActualizarContrasenaAntiguaAsync(string guidAcceso, string contrasenaHash, CancellationToken cancellationToken = default);
+    Task<bool> ActualizarContrasenaAntigua(string guidAcceso, string contrasenaHash, CancellationToken cancellationToken = default);
 
-    Task<bool> ConfirmarCuentaAsync(string guidAcceso, CancellationToken cancellationToken = default);
+    Task<bool> ConfirmarCuenta(string guidAcceso, CancellationToken cancellationToken = default);
 }

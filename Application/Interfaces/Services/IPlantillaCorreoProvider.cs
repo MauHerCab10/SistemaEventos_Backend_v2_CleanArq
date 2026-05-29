@@ -5,5 +5,5 @@ namespace SistemaEventos.Application.Interfaces.Services;
 
 public interface IPlantillaCorreoProvider
 {
-    Task<PlantillaCorreo?> ObtenerPorTipoAsync(PlantillasCorreoEnum tipoPlantilla, CancellationToken cancellationToken = default);
+    Task<PlantillaCorreo?> ObtenerPlantillaPorTipo(PlantillasCorreoEnum tipoPlantilla, CancellationToken cancellationToken = default);
 }

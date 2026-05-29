@@ -1,6 +1,6 @@
 namespace SistemaEventos.Application.DTOs;
 
-public class UsuarioLoginRequestDto
+public class UsuarioLoginRequestDTO
 {
     public required string Email { get; set; }
 

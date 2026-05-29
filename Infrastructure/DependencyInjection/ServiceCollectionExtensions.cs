@@ -2,8 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SistemaEventos.Application.Interfaces.Persistence;
 using SistemaEventos.Application.Interfaces.Services;
-using SistemaEventos.Application.UseCases.Implementations;
-using SistemaEventos.Application.UseCases.Interfaces;
 using SistemaEventos.Infrastructure.Configuration;
 using SistemaEventos.Infrastructure.Persistence;
 using SistemaEventos.Infrastructure.Persistence.Repositories;
@@ -35,10 +33,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEmailSender, EmailSender>();
         services.AddSingleton<IGuidAccessSettings, GuidAccessSettings>();
         services.AddScoped<IPlantillaCorreoProvider, PlantillaCorreoProvider>();
-
-        services.AddScoped<IAutorizacionService, AutorizacionService>();
-        services.AddScoped<IUsuarioService, UsuarioService>();
-        services.AddScoped<IEventoService, EventoService>();
 
         return services;
     }

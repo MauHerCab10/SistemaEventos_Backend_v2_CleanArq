@@ -4,15 +4,15 @@ namespace SistemaEventos.Application.Interfaces.Persistence;
 
 public interface IEventoRepository
 {
-    Task<List<Evento>> ConsultarEventosDisponiblesAsync(string idUsuario, CancellationToken cancellationToken = default);
+    Task<List<Evento>> ConsultarEventosDisponibles(int idUsuario, CancellationToken cancellationToken = default);
 
-    Task<bool> CrearEventoAsync(Evento evento, CancellationToken cancellationToken = default);
+    Task<bool> CrearEvento(Evento evento, CancellationToken cancellationToken = default);
 
-    Task<bool> ModificarEventoAsync(Evento evento, CancellationToken cancellationToken = default);
+    Task<bool> ModificarEvento(Evento evento, CancellationToken cancellationToken = default);
 
-    Task<bool> EliminarEventoAsync(int idEvento, CancellationToken cancellationToken = default);
+    Task<bool> EliminarEvento(int idEvento, CancellationToken cancellationToken = default);
 
-    Task<bool> InscripcionAEventoAsync(int idEvento, int idUsuario, CancellationToken cancellationToken = default);
+    Task<bool> InscripcionAEvento(int idEvento, int idUsuario, CancellationToken cancellationToken = default);
 
-    Task<bool> DimisionDeEventoAsync(int idEvento, int idUsuario, CancellationToken cancellationToken = default);
+    Task<bool> DimisionDeEvento(int idEvento, int idUsuario, CancellationToken cancellationToken = default);
 }

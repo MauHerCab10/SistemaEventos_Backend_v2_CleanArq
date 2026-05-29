@@ -12,13 +12,14 @@ public class AutorizacionRepository : SqlRepositoryBase, IAutorizacionRepository
     {
     }
 
-    public Task<HistorialRefreshToken?> ConsultarUltimoHistorialRefreshTokensPorUsuarioAsync(
+
+    public Task<HistorialRefreshToken?> ConsultarUltimoHistorialRefreshTokensPorUsuario(
         int idUsuario,
         string? accessToken = null,
         string? refreshToken = null,
         CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ConsultarUltimoHistorialRefreshTokensPorUsuario", connection, transaction);
             command.Parameters.AddWithValue("@IdUsuario", idUsuario);
@@ -44,9 +45,10 @@ public class AutorizacionRepository : SqlRepositoryBase, IAutorizacionRepository
         }, cancellationToken);
     }
 
-    public Task<bool> GuardarHistorialRefreshTokenDeUsuarioAsync(HistorialRefreshToken historialRefreshToken, CancellationToken cancellationToken = default)
+
+    public Task<bool> GuardarHistorialRefreshTokenDeUsuario(HistorialRefreshToken historialRefreshToken, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_GuardarHistorialRefreshTokenDeUsuario", connection, transaction);
             command.Parameters.AddWithValue("@IdUsuario", historialRefreshToken.IdUsuario);
@@ -59,9 +61,10 @@ public class AutorizacionRepository : SqlRepositoryBase, IAutorizacionRepository
         }, cancellationToken);
     }
 
-    public Task<bool> ActualizarHistorialRefreshTokenDeUsuarioAsync(int idHistorialToken, string accessToken, CancellationToken cancellationToken = default)
+
+    public Task<bool> ActualizarHistorialRefreshTokenDeUsuario(int idHistorialToken, string accessToken, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ActualizarHistorialRefreshTokenDeUsuario", connection, transaction);
             command.Parameters.AddWithValue("@IdHistorialToken", idHistorialToken);
@@ -71,9 +74,10 @@ public class AutorizacionRepository : SqlRepositoryBase, IAutorizacionRepository
         }, cancellationToken);
     }
 
-    public Task<bool> EliminarHistorialRefreshTokensPorUsuarioAsync(int idUsuario, CancellationToken cancellationToken = default)
+
+    public Task<bool> EliminarHistorialRefreshTokensPorUsuario(int idUsuario, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_EliminarHistorialRefreshTokensPorUsuario", connection, transaction);
             command.Parameters.AddWithValue("@IdUsuario", idUsuario);
@@ -82,4 +86,5 @@ public class AutorizacionRepository : SqlRepositoryBase, IAutorizacionRepository
             return true;
         }, cancellationToken);
     }
+
 }

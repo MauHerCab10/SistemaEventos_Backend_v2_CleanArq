@@ -2,9 +2,9 @@ namespace SistemaEventos.Application.Interfaces.Services;
 
 public interface IPasswordHasher
 {
-    string Hash(string value);
+    string EncriptarContraseña(string value);
 
-    bool Verify(string plainText, string hash);
+    bool VerificarContrasena(string contrasenaPlana, string contrasenaHashGuardada);
 
     string GenerarGuid();
 }

@@ -4,5 +4,5 @@ namespace SistemaEventos.Application.Interfaces.Services;
 
 public interface IEmailSender
 {
-    Task<bool> EnviarAsync(InfoCorreo request, CancellationToken cancellationToken = default);
+    Task<bool> EnviarCorreo(InfoCorreo request, CancellationToken cancellationToken = default);
 }

@@ -1,8 +1,8 @@
 using SistemaEventos.Application.Common.Models;
 using SistemaEventos.Application.DTOs;
 using SistemaEventos.Application.Interfaces.Persistence;
+using SistemaEventos.Application.Mappings;
 using SistemaEventos.Application.UseCases.Interfaces;
-using SistemaEventos.Domain.Entities;
 
 namespace SistemaEventos.Application.UseCases.Implementations;
 
@@ -15,36 +15,37 @@ public class EventoService : IEventoService
         _eventoRepository = eventoRepository;
     }
 
-    public async Task<Respuesta<List<EventoDto>>> ConsultarEventosDisponiblesAsync(string idUsuario, CancellationToken cancellationToken = default)
+    //Consulta los eventos disponibles para un usuario específico
+    public async Task<Respuesta<List<EventoDTO>>> ConsultarEventosDisponibles(int idUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var listaEventosDisponibles = await _eventoRepository.ConsultarEventosDisponiblesAsync(idUsuario, cancellationToken);
+            var listaEventosDisponibles = await _eventoRepository.ConsultarEventosDisponibles(idUsuario, cancellationToken);
 
             if (listaEventosDisponibles.Count == 0)
             {
-                return Respuesta<List<EventoDto>>.Fail($"No se encontro ningun evento para el usuario '{idUsuario}'.");
+                return Respuesta<List<EventoDTO>>.Fail($"No se encontró ningún evento para el usuario '{idUsuario}'.");
             }
 
-            return Respuesta<List<EventoDto>>.Ok(listaEventosDisponibles.Select(Map).ToList());
+            return Respuesta<List<EventoDTO>>.Ok(listaEventosDisponibles.Select(evento => evento.ToDTO()).ToList());
         }
         catch (Exception exception)
         {
-            return Respuesta<List<EventoDto>>.Fail(exception.Message);
+            return Respuesta<List<EventoDTO>>.Fail(exception.Message);
         }
     }
 
-    public async Task<Respuesta<bool>> CrearEventoAsync(EventoDto evento, CancellationToken cancellationToken = default)
+    //Crea un nuevo evento en el sistema
+    public async Task<Respuesta<bool>> CrearEvento(EventoDTO evento, CancellationToken cancellationToken = default)
     {
         try
         {
-            var entidad = Map(evento);
-            entidad.SincronizarFechaHora();
+            var entidad = evento.ToEntity();
 
-            var respuesta = await _eventoRepository.CrearEventoAsync(entidad, cancellationToken);
+            var respuesta = await _eventoRepository.CrearEvento(entidad, cancellationToken);
             return respuesta
                 ? Respuesta<bool>.Ok(true, $"Evento '{evento.NombreEvento}' creado exitosamente.")
-                : Respuesta<bool>.Fail("Error al momento de la creacion del evento.");
+                : Respuesta<bool>.Fail("Error al momento de la creación del evento.");
         }
         catch (Exception exception)
         {
@@ -52,17 +53,17 @@ public class EventoService : IEventoService
         }
     }
 
-    public async Task<Respuesta<bool>> ModificarEventoAsync(EventoDto evento, CancellationToken cancellationToken = default)
+    //Modifica los detalles de un evento existente
+    public async Task<Respuesta<bool>> ModificarEvento(EventoDTO evento, CancellationToken cancellationToken = default)
     {
         try
         {
-            var entidad = Map(evento);
-            entidad.SincronizarFechaHora();
+            var entidad = evento.ToEntity();
 
-            var respuesta = await _eventoRepository.ModificarEventoAsync(entidad, cancellationToken);
+            var respuesta = await _eventoRepository.ModificarEvento(entidad, cancellationToken);
             return respuesta
                 ? Respuesta<bool>.Ok(true, $"Evento '{evento.NombreEvento}' actualizado exitosamente.")
-                : Respuesta<bool>.Fail("Error al momento de la actualizacion del evento.");
+                : Respuesta<bool>.Fail("Error al momento de la actualización del evento.");
         }
         catch (Exception exception)
         {
@@ -70,11 +71,12 @@ public class EventoService : IEventoService
         }
     }
 
-    public async Task<Respuesta<bool>> EliminarEventoAsync(int idEvento, CancellationToken cancellationToken = default)
+    //Elimina un evento del sistema
+    public async Task<Respuesta<bool>> EliminarEvento(int idEvento, CancellationToken cancellationToken = default)
     {
         try
         {
-            var respuesta = await _eventoRepository.EliminarEventoAsync(idEvento, cancellationToken);
+            var respuesta = await _eventoRepository.EliminarEvento(idEvento, cancellationToken);
             return respuesta
                 ? Respuesta<bool>.Ok(true, $"Evento '{idEvento}' eliminado exitosamente.")
                 : Respuesta<bool>.Fail("Error al momento de eliminar el evento.");
@@ -85,14 +87,15 @@ public class EventoService : IEventoService
         }
     }
 
-    public async Task<Respuesta<bool>> InscripcionAEventoAsync(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
+    //Permite a un usuario inscribirse en un evento específico
+    public async Task<Respuesta<bool>> InscripcionAEvento(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var respuesta = await _eventoRepository.InscripcionAEventoAsync(idEvento, idUsuario, cancellationToken);
+            var respuesta = await _eventoRepository.InscripcionAEvento(idEvento, idUsuario, cancellationToken);
             return respuesta
                 ? Respuesta<bool>.Ok(true, $"Usuario '{idUsuario}' inscrito al evento '{idEvento}' satisfactoriamente.")
-                : Respuesta<bool>.Fail("Error al momento de la inscripcion del usuario al evento.");
+                : Respuesta<bool>.Fail("Error al momento de la inscripción del usuario al evento.");
         }
         catch (Exception exception)
         {
@@ -100,11 +103,12 @@ public class EventoService : IEventoService
         }
     }
 
-    public async Task<Respuesta<bool>> DimisionDeEventoAsync(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
+    //Permite a un usuario darse de baja de un evento específico
+    public async Task<Respuesta<bool>> DimisionDeEvento(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
     {
         try
         {
-            var respuesta = await _eventoRepository.DimisionDeEventoAsync(idEvento, idUsuario, cancellationToken);
+            var respuesta = await _eventoRepository.DimisionDeEvento(idEvento, idUsuario, cancellationToken);
             return respuesta
                 ? Respuesta<bool>.Ok(true, $"Usuario '{idUsuario}' dado de baja del evento '{idEvento}' satisfactoriamente.")
                 : Respuesta<bool>.Fail("Error al momento del usuario darse de baja del evento.");
@@ -115,41 +119,4 @@ public class EventoService : IEventoService
         }
     }
 
-    private static Evento Map(EventoDto dto)
-    {
-        return new Evento
-        {
-            IdEvento = dto.IdEvento,
-            NombreEvento = dto.NombreEvento,
-            Descripcion = dto.Descripcion,
-            Fecha = dto.Fecha,
-            Hora = dto.Hora,
-            FechaHora = dto.FechaHora,
-            Direccion_Ubicacion = dto.Direccion_Ubicacion,
-            CapMaxPermitida = dto.CapMaxPermitida,
-            IdUsuarioCreacion = dto.IdUsuarioCreacion,
-            CantidadAsistentes = dto.CantidadAsistentes,
-            CuposDisponibles = dto.CuposDisponibles,
-            EsUsuarioInscrito = dto.EsUsuarioInscrito
-        };
-    }
-
-    private static EventoDto Map(Evento evento)
-    {
-        return new EventoDto
-        {
-            IdEvento = evento.IdEvento,
-            NombreEvento = evento.NombreEvento,
-            Descripcion = evento.Descripcion,
-            Fecha = evento.Fecha,
-            Hora = evento.Hora,
-            FechaHora = evento.FechaHora,
-            Direccion_Ubicacion = evento.Direccion_Ubicacion,
-            CapMaxPermitida = evento.CapMaxPermitida,
-            IdUsuarioCreacion = evento.IdUsuarioCreacion,
-            CantidadAsistentes = evento.CantidadAsistentes,
-            CuposDisponibles = evento.CuposDisponibles,
-            EsUsuarioInscrito = evento.EsUsuarioInscrito
-        };
-    }
 }

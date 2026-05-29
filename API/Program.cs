@@ -2,10 +2,12 @@ using SistemaEventos.Server.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddServer(builder.Configuration, builder.Environment);
+//Inyección y Configuración de Dependencias
+builder.Services.InicializarServidor(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
-app.UseServer(builder.Environment);
+//Configuración e Inicialización de la Aplicación Web
+app.UsarServidor(builder.Environment);
 
 app.Run();

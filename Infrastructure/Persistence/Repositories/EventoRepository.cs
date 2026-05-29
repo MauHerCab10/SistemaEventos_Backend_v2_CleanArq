@@ -11,9 +11,10 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
     {
     }
 
-    public Task<List<Evento>> ConsultarEventosDisponiblesAsync(string idUsuario, CancellationToken cancellationToken = default)
+
+    public Task<List<Evento>> ConsultarEventosDisponibles(int idUsuario, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             var listaEventosDisponibles = new List<Evento>();
 
@@ -30,9 +31,7 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
                     NombreEvento = reader["NombreEvento"].ToString() ?? string.Empty,
                     Descripcion = reader["Descripcion"].ToString() ?? string.Empty,
                     FechaHora = fechaHora,
-                    Fecha = fechaHora.ToString("dd/MM/yyyy"),
-                    Hora = fechaHora.ToString("HH:mm"),
-                    Direccion_Ubicacion = reader["Direccion_Ubicacion"].ToString() ?? string.Empty,
+                    DireccionUbicacion = reader["Direccion_Ubicacion"].ToString() ?? string.Empty,
                     CapMaxPermitida = Convert.ToInt32(reader["CapMaxPermitida"]),
                     IdUsuarioCreacion = Convert.ToInt32(reader["IdUsuarioCreacion"]),
                     CantidadAsistentes = Convert.ToInt32(reader["CantidadAsistentes"]),
@@ -45,15 +44,16 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
         }, cancellationToken);
     }
 
-    public Task<bool> CrearEventoAsync(Evento evento, CancellationToken cancellationToken = default)
+
+    public Task<bool> CrearEvento(Evento evento, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_CrearEvento", connection, transaction);
             command.Parameters.AddWithValue("@NombreEvento", evento.NombreEvento);
             command.Parameters.AddWithValue("@Descripcion", evento.Descripcion);
-            command.Parameters.AddWithValue("@FechaHora", (object?)evento.FechaHora ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Direccion_Ubicacion", evento.Direccion_Ubicacion);
+            command.Parameters.AddWithValue("@FechaHora", evento.FechaHora);
+            command.Parameters.AddWithValue("@Direccion_Ubicacion", evento.DireccionUbicacion);
             command.Parameters.AddWithValue("@CapMaxPermitida", evento.CapMaxPermitida);
             command.Parameters.AddWithValue("@IdUsuarioCreacion", evento.IdUsuarioCreacion);
 
@@ -61,23 +61,25 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
         }, cancellationToken);
     }
 
-    public Task<bool> ModificarEventoAsync(Evento evento, CancellationToken cancellationToken = default)
+
+    public Task<bool> ModificarEvento(Evento evento, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_ModificarEvento", connection, transaction);
             command.Parameters.AddWithValue("@IdEvento", evento.IdEvento);
             command.Parameters.AddWithValue("@CapMaxPermitida", evento.CapMaxPermitida);
-            command.Parameters.AddWithValue("@FechaHora", (object?)evento.FechaHora ?? DBNull.Value);
-            command.Parameters.AddWithValue("@Direccion_Ubicacion", evento.Direccion_Ubicacion);
+            command.Parameters.AddWithValue("@FechaHora", evento.FechaHora);
+            command.Parameters.AddWithValue("@Direccion_Ubicacion", evento.DireccionUbicacion);
 
             return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
         }, cancellationToken);
     }
 
-    public Task<bool> EliminarEventoAsync(int idEvento, CancellationToken cancellationToken = default)
+
+    public Task<bool> EliminarEvento(int idEvento, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_EliminarEvento", connection, transaction);
             command.Parameters.AddWithValue("@IdEvento", idEvento);
@@ -86,9 +88,10 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
         }, cancellationToken);
     }
 
-    public Task<bool> InscripcionAEventoAsync(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
+
+    public Task<bool> InscripcionAEvento(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_InscripcionEvento", connection, transaction);
             command.Parameters.AddWithValue("@IdEvento", idEvento);
@@ -98,9 +101,10 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
         }, cancellationToken);
     }
 
-    public Task<bool> DimisionDeEventoAsync(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
+
+    public Task<bool> DimisionDeEvento(int idEvento, int idUsuario, CancellationToken cancellationToken = default)
     {
-        return WithConnectionAsync(async (connection, transaction) =>
+        return ManageConnection(async (connection, transaction) =>
         {
             await using var command = CreateStoredProcedureCommand("sp_DimisionDeEvento", connection, transaction);
             command.Parameters.AddWithValue("@IdEvento", idEvento);
@@ -109,4 +113,5 @@ public class EventoRepository : SqlRepositoryBase, IEventoRepository
             return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
         }, cancellationToken);
     }
+
 }
