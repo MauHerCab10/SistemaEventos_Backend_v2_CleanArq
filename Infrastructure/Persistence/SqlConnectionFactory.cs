@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace SistemaEventos.Infrastructure.Persistence;
 
+//Crea una nueva conexión SQL cuando todavía no existe una
 public class SqlConnectionFactory
 {
     private readonly string _connectionString;

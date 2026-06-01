@@ -72,7 +72,7 @@ public class UsuarioService : IUsuarioService
 
             if (!contrasenaValidada)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("La contrasena no coincide con la que hay almacenada en el sistema.");
+                return Respuesta<UsuarioResponseDTO>.Fail("La contraseña no coincide con la que hay almacenada en el sistema.");
             }
 
             var resultadoTokens = await _autorizacionService.GenerarTokensConCredenciales(DTOUsuario.Email, cancellationToken);
@@ -161,7 +161,7 @@ public class UsuarioService : IUsuarioService
             var respuesta = await _usuarioRepository.RestablecerContrasena(usuarioEncontrado, cancellationToken);
             if (!respuesta)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("No se pudo restablecer su contrasena.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se pudo restablecer su contraseña.");
             }
 
             return await EnviarCorreoConPlantilla(
@@ -169,7 +169,7 @@ public class UsuarioService : IUsuarioService
                 usuarioEncontrado.NombreApellido,
                 usuarioEncontrado.Email,
                 _accountUrlBuilder.ArmarUrlRestablecerContrasena(usuarioEncontrado.GuidAcceso),
-                "La solicitud de restablecimiento de contrasena fue procesada satisfactoriamente. Por favor revise la bandeja de entrada de su correo electronico para actualizar su contrasena.",
+                "La solicitud de restablecimiento de contraseña fue procesada satisfactoriamente. Por favor revise la bandeja de entrada de su correo electrónico para actualizar su contraseña.",
                 cancellationToken);
         }
         catch (Exception exception)
@@ -185,7 +185,7 @@ public class UsuarioService : IUsuarioService
         {
             if (nuevaContrasena != confirmacionContrasena)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("Las contrasenas ingresadas no coinciden.");
+                return Respuesta<UsuarioResponseDTO>.Fail("Las contraseñas ingresadas no coinciden.");
             }
 
             var passwordValidation = ValidarFormatoContrasena(nuevaContrasena);
@@ -202,15 +202,15 @@ public class UsuarioService : IUsuarioService
 
             if (usuarioEncontrado.GuidValidado || !usuarioEncontrado.GuidActivo)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("El enlace por el cual solicitaste el cambio de contrasena ya se encuentra invalido, ha expirado, o ya habias realizado un cambio de contrasena anteriormente usando este correo.");
+                return Respuesta<UsuarioResponseDTO>.Fail("El enlace por el cual solicitaste el cambio de contraseña ya se encuentra inválido, ha expirado, o ya habías realizado un cambio de contraseña anteriormente usando este correo.");
             }
 
             var contrasenaHash = _passwordHasher.EncriptarContraseña(nuevaContrasena);
             var respuesta = await _usuarioRepository.ActualizarContrasenaAntigua(guidAcceso, contrasenaHash, cancellationToken);
 
             return respuesta
-                ? Respuesta<UsuarioResponseDTO>.Ok(null, "Contrasena actualizada satisfactoriamente.")
-                : Respuesta<UsuarioResponseDTO>.Fail("No se pudo actualizar la contrasena. Favor usar el correo con la ultima solicitud de cambio de contrasena generada.");
+                ? Respuesta<UsuarioResponseDTO>.Ok(null, "Contraseña actualizada satisfactoriamente.")
+                : Respuesta<UsuarioResponseDTO>.Fail("No se pudo actualizar la contraseña. Favor usar el correo con la última solicitud de cambio de contraseña generada.");
         }
         catch (Exception exception)
         {
@@ -226,7 +226,7 @@ public class UsuarioService : IUsuarioService
             var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorGuid(guidAcceso, cancellationToken);
             if (usuarioEncontrado is null || !usuarioEncontrado.GuidActivo)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("GUID no existe o ya se encuentra invalido. Favor solicite el restablecimiento de su contrasena.");
+                return Respuesta<UsuarioResponseDTO>.Fail("GUID no existe o ya se encuentra inválido. Favor solicite el restablecimiento de su contraseña.");
             }
 
             if (usuarioEncontrado.Confirmado)
@@ -362,7 +362,7 @@ public class UsuarioService : IUsuarioService
     {
         if (contrasena.Length < 12 || !PasswordRegex.IsMatch(contrasena))
         {
-            return Respuesta<UsuarioResponseDTO>.Fail("Formato de contrasena invalido. La contrasena debe contener 12 caracteres como minimo, al menos una minuscula, una mayuscula, un numero, un caracter especial y no debe contener espacios.");
+            return Respuesta<UsuarioResponseDTO>.Fail("Formato de contraseña inválido. La contraseña debe contener 12 caracteres como mínimo, al menos una minúscula, una mayúscula, un número, un carácter especial y no debe contener espacios.");
         }
 
         return Respuesta<UsuarioResponseDTO>.Ok(null);
@@ -396,4 +396,5 @@ public class UsuarioService : IUsuarioService
             ? Respuesta<UsuarioResponseDTO>.Ok(null, mensajeExito)
             : Respuesta<UsuarioResponseDTO>.Fail($"No fue posible enviar el correo a '{email}'.");
     }
+
 }

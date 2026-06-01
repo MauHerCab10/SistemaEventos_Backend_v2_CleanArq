@@ -15,7 +15,7 @@ public class EventoService : IEventoService
         _eventoRepository = eventoRepository;
     }
 
-    //Consulta los eventos disponibles para un usuario específico
+    //Devuelve todos los eventos disponibles en la BD
     public async Task<Respuesta<List<EventoDTO>>> ConsultarEventosDisponibles(int idUsuario, CancellationToken cancellationToken = default)
     {
         try
@@ -35,7 +35,7 @@ public class EventoService : IEventoService
         }
     }
 
-    //Crea un nuevo evento en el sistema
+    //Crea un nuevo evento en la BD
     public async Task<Respuesta<bool>> CrearEvento(EventoDTO evento, CancellationToken cancellationToken = default)
     {
         try
@@ -53,7 +53,7 @@ public class EventoService : IEventoService
         }
     }
 
-    //Modifica los detalles de un evento existente
+    //Actualiza un evento existente en la BD
     public async Task<Respuesta<bool>> ModificarEvento(EventoDTO evento, CancellationToken cancellationToken = default)
     {
         try
@@ -71,7 +71,7 @@ public class EventoService : IEventoService
         }
     }
 
-    //Elimina un evento del sistema
+    //Elimina un evento existente en la BD
     public async Task<Respuesta<bool>> EliminarEvento(int idEvento, CancellationToken cancellationToken = default)
     {
         try

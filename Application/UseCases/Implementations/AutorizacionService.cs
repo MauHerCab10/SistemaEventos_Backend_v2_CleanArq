@@ -84,7 +84,7 @@ public class AutorizacionService : IAutorizacionService
             }
 
             var nuevoAccessToken = _jwtTokenService.GenerarAccessToken(idUsuario);
-            var actualizado = await _unitOfWork.ExecuteAsync(
+            var actualizado = await _unitOfWork.EjecutarAccion(
                 ct => _autorizacionRepository.ActualizarHistorialRefreshTokenDeUsuario(refreshTokenEncontrado.IdHistorialToken, nuevoAccessToken, ct),
                 cancellationToken);
 
@@ -126,7 +126,7 @@ public class AutorizacionService : IAutorizacionService
                 return Respuesta<bool>.Fail($"No existen tokens activos del usuario '{idUsuario}' para eliminar.");
             }
 
-            var esExitoso = await _unitOfWork.ExecuteAsync(
+            var esExitoso = await _unitOfWork.EjecutarAccion(
                 ct => _autorizacionRepository.EliminarHistorialRefreshTokensPorUsuario(idUsuario, ct),
                 cancellationToken);
 
@@ -167,7 +167,7 @@ public class AutorizacionService : IAutorizacionService
             FechaExpiracion = fechaExpiracion
         };
 
-        var guardado = await _unitOfWork.ExecuteAsync(
+        var guardado = await _unitOfWork.EjecutarAccion(
             async ct =>
             {
                 await _autorizacionRepository.EliminarHistorialRefreshTokensPorUsuario(idUsuario, ct);

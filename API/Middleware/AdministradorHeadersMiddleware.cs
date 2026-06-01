@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using SistemaEventos.Application.Common.Models;
+using SistemaEventos.Application.DTOs;
 using SistemaEventos.Application.Interfaces.Services;
 using SistemaEventos.Application.UseCases.Interfaces;
 using SistemaEventos.Server.Services;
@@ -38,10 +39,10 @@ public class AdministradorHeadersMiddleware
         try
         {
             //Headers
-            var accessToken = GetAccessToken(context);
+            var accessToken = GetAccessToken(context); //AccessToken
 
             //Cookies
-            context.Request.Cookies.TryGetValue("cookieRefreshToken", out var refreshToken);
+            var refreshToken = GetRefreshToken(context); //RefreshToken
 
             if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
             {
@@ -51,7 +52,7 @@ public class AdministradorHeadersMiddleware
 
             if (!autorizacionService.ValidarToken(accessToken))
             {
-                await WriteBadRequest(context, "AccessToken procesado es invalido.");
+                await WriteBadRequest(context, "AccessToken procesado es inválido.");
                 return;
             }
 
@@ -68,7 +69,7 @@ public class AdministradorHeadersMiddleware
 
             if (fechaExpiracionRefreshToken is null)
             {
-                await WriteBadRequest(context, $"No existe ningun token activo para el usuario '{idUsuario}'. Favor iniciar sesion nuevamente.");
+                await WriteBadRequest(context, $"No existe ningún token activo para el usuario '{idUsuario}'. Favor iniciar sesión nuevamente.");
                 return;
             }
 
@@ -79,13 +80,11 @@ public class AdministradorHeadersMiddleware
             }
 
             //Si el AccessToken ya está vencido, pero el RefreshToken sigue aún vigente, se procede a crear un nuevo AccessToken
-            var newAccessToken = accessToken;
-            if (fechaExpiracionAccessToken is not null
-                && fechaExpiracionAccessToken < fechaActual
-                && fechaExpiracionRefreshToken > fechaActual)
+            Respuesta<AuthTokensDTO> respuesta = null!;
+            if (fechaExpiracionAccessToken is not null && fechaExpiracionAccessToken < fechaActual && fechaExpiracionRefreshToken > fechaActual)
             {
                 //Por cada petición que requiera autenticación (AccessToken de por medio), se genera un nuevo AccessToken para refrescar su tiempo de expiración, esto debido a su corto tiempo de vida
-                var respuesta = await autorizacionService.ActualizarAccessTokenConRefreshTokenAnterior(
+                respuesta = await autorizacionService.ActualizarAccessTokenConRefreshTokenAnterior(
                     idUsuario.Value,
                     accessToken,
                     refreshToken,
@@ -96,9 +95,12 @@ public class AdministradorHeadersMiddleware
                     await WriteBadRequest(context, respuesta.Mensaje);
                     return;
                 }
-
-                newAccessToken = respuesta.Valor.AccessToken;
             }
+
+            string newAccessToken
+                = respuesta is null || respuesta.Valor is null
+                ? accessToken
+                : respuesta.Valor.AccessToken;
 
             //Cargar las cookies en el navegador del usuario (quedan actualizadas para la siguiente petición entrante)
             //cookieService.SetCookieAccessToken(newAccessToken);
@@ -119,22 +121,16 @@ public class AdministradorHeadersMiddleware
             await context.Response.WriteAsJsonAsync(new Respuesta<object>
             {
                 IsSuccess = false,
-                Mensaje = $"Ocurrio un error en la autorizacion. {exception.Message}"
+                Mensaje = $"Ocurrió un error en la autorización. {exception.Message}"
             });
         }
     }
 
+    //Método encargado de extraer el AccessToken del header Authorization, validando q el formato sea correcto (Bearer {token})
     private static string? GetAccessToken(HttpContext context)
     {
-        if (context.Request.Cookies.TryGetValue("cookieAccessToken", out var cookieToken)
-            && !string.IsNullOrEmpty(cookieToken))
-        {
-            return cookieToken;
-        }
-
         var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        if (!string.IsNullOrEmpty(authorizationHeader)
-            && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             return authorizationHeader[7..].Trim();
         }
@@ -142,6 +138,18 @@ public class AdministradorHeadersMiddleware
         return null;
     }
 
+    //Método encargado de extraer el RefreshToken de las Cookies, validando q la cookie exista y no esté vacía
+    private static string? GetRefreshToken(HttpContext context)
+    {
+        if (context.Request.Cookies.TryGetValue("cookieRefreshToken", out var refreshToken) && !string.IsNullOrEmpty(refreshToken))
+        {
+            return refreshToken;
+        }
+
+        return null;
+    }
+
+    //Método encargado de escribir una respuesta de error con status code 400 (Bad Request) y un mensaje personalizado
     private static async Task WriteBadRequest(HttpContext context, string mensaje)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -152,6 +160,8 @@ public class AdministradorHeadersMiddleware
         });
     }
 
+    //Método encargado de actualizar el contexto HTTP del usuario con los claims extraídos del nuevo AccessToken generado,
+    //esto para q el usuario pueda acceder a los recursos autorizados sin necesidad de volver a autenticarse después de q su AccessToken haya expirado y se haya generado uno nuevo usando el RefreshToken
     private void ActualizarContextoHttpDelUsuario(HttpContext context, string newAccessToken)
     {
         var tokenHandler = new JwtSecurityTokenHandler();

@@ -27,7 +27,7 @@ public abstract class SqlRepositoryBase
         return await action(connection, null);
     }
 
-    //Crea un SqlCommand configurado para ejecutar un SP, utilizando la conexión y transacción (si existe) proporcionadas, y establece el tipo de comando como StoredProcedure
+    //Crea un SqlCommand configurado para ejecutar un SP, utilizando la conexión y transacción proporcionadas, estableciendo el tipo de comando como StoredProcedure
     protected SqlCommand CreateStoredProcedureCommand(string storedProcedure, SqlConnection connection, SqlTransaction? transaction)
     {
         var command = transaction is null
