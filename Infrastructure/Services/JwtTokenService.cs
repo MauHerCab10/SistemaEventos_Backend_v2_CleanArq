@@ -134,6 +134,7 @@ public class JwtTokenService : IJwtTokenService
         return fechaExpiracion;
     }
 
+    #region Métodos PRIVADOS
     // Lee el AccessToken y devuelve un objeto JwtSecurityToken que contiene los claims y la información de dicho AccessToken. Si el token no es válido, devuelve null
     private JwtSecurityToken? ReadToken(string accessToken)
     {
@@ -147,4 +148,6 @@ public class JwtTokenService : IJwtTokenService
             return null;
         }
     }
+    #endregion
+
 }

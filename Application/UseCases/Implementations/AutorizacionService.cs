@@ -149,6 +149,8 @@ public class AutorizacionService : IAutorizacionService
         return _jwtTokenService.ValidarToken(accessToken);
     }
 
+
+    #region Métodos PRIVADOS
     //Se genera un nuevo AccessToken y RefreshToken para el usuario, y guardar el nuevo RefreshToken en la BD
     //Antes de guardar el nuevo RefreshToken, se eliminan los tokens anteriores del usuario para garantizar que solo exista un par de tokens activo por usuario
     private async Task<Respuesta<AuthTokensDTO>> GuardarNuevaSesion(int idUsuario, CancellationToken cancellationToken)
@@ -189,5 +191,6 @@ public class AutorizacionService : IAutorizacionService
             },
             "AccessToken y RefreshToken generados correctamente.");
     }
+    #endregion
 
 }

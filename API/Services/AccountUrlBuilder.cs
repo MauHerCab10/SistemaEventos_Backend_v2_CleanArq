@@ -16,6 +16,7 @@ public class AccountUrlBuilder : IAccountUrlBuilder, IFrontendUrlBuilder
         _httpContextAccessor = httpContextAccessor;
     }
 
+    //Construye la URL completa para la confirmación de cuenta
     public string ArmarUrlConfirmacionCuenta(string guidAcceso)
     {
         var baseUrl = GetBackendBaseUrl();
@@ -23,19 +24,25 @@ public class AccountUrlBuilder : IAccountUrlBuilder, IFrontendUrlBuilder
         return completeUrl;
     }
 
+    //Construye la URL completa para el restablecimiento de contraseña
     public string ArmarUrlRestablecerContrasena(string guidAcceso)
     {
-        var completeUrl = $"{GetFrontendBaseUrl()}/password?guidAcceso={guidAcceso}";
+        var baseUrl = GetFrontendBaseUrl();
+        var completeUrl = $"{baseUrl}/password?guidAcceso={guidAcceso}";
         return completeUrl;
     }
 
+    //Construye la URL completa para redirigir al usuario al login después de confirmar su cuenta
     public string ArmarUrlLoginConfirmacion(bool confirmacionExitosa)
     {
+        var baseUrl = GetFrontendBaseUrl();
         var estadoConfirmacion = confirmacionExitosa ? "ok" : "error";
-        var completeUrl = $"{GetFrontendBaseUrl()}/login?confirmacion={estadoConfirmacion}";
+        var completeUrl = $"{baseUrl}/login?confirmacion={estadoConfirmacion}";
         return completeUrl;
     }
 
+    #region Métodos PRIVADOS
+    //Obtiene la URL base del Frontend dependiendo del entorno de ejecución (Desarrollo o Producción), utilizando la configuración de la aplicación para obtener la URL correspondiente
     private string GetFrontendBaseUrl()
     {
         return _environment.IsDevelopment()
@@ -43,6 +50,8 @@ public class AccountUrlBuilder : IAccountUrlBuilder, IFrontendUrlBuilder
             : _configuration["Frontend_URLs:Produccion"] ?? string.Empty;
     }
 
+    //Obtiene la URL base del Backend a partir de la URL de la petición actual, para obtener el dominio y el puerto
+    //Si no se puede obtener a partir de la petición, utiliza la configuración de la aplicación para obtener la URL base del API
     private string GetBackendBaseUrl()
     {
         var request = _httpContextAccessor.HttpContext?.Request;
@@ -67,4 +76,6 @@ public class AccountUrlBuilder : IAccountUrlBuilder, IFrontendUrlBuilder
         return _configuration["ApiSettings:BaseUrl"]?.TrimEnd('/')
             ?? throw new InvalidOperationException("No fue posible construir la URL base del API.");
     }
+    #endregion
+
 }

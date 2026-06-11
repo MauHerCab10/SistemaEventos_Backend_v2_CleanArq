@@ -321,6 +321,7 @@ public class UsuarioService : IUsuarioService
         }
     }
 
+    #region Métodos PRIVADOS
     //Mapea un objeto Usuario y AuthTokensDTO a un UsuarioResponseDTO
     private static UsuarioResponseDTO MapToResponse(Usuario usuario, AuthTokensDTO tokens)
     {
@@ -396,5 +397,6 @@ public class UsuarioService : IUsuarioService
             ? Respuesta<UsuarioResponseDTO>.Ok(null, mensajeExito)
             : Respuesta<UsuarioResponseDTO>.Fail($"No fue posible enviar el correo a '{email}'.");
     }
+    #endregion
 
 }

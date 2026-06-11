@@ -31,6 +31,7 @@ public class PlantillaCorreoProvider : IPlantillaCorreoProvider
         return plantillas.FirstOrDefault(plantilla => plantilla.Nombre == tipoPlantilla.ToString());
     }
 
+    #region Métodos PRIVADOS
     //Obtiene de BD las plantillas de los correos a enviar ('ConfirmarCorreo' y 'RestablecerContrasena') y las deja cargadas en caché para posteriores usos
     private async Task<List<PlantillaCorreo>> ObtenerPlantillas(CancellationToken cancellationToken)
     {
@@ -51,4 +52,6 @@ public class PlantillaCorreoProvider : IPlantillaCorreoProvider
 
         return plantillas;
     }
+    #endregion
+
 }

@@ -47,6 +47,8 @@ public static class EventoMappingExtensions
         };
     }
 
+
+    #region Métodos PRIVADOS
     //Normaliza la fecha y la hora del Evento y devuelve un único DateTime
     private static DateTime NormalizarFechaHora(EventoDTO dto)
     {
@@ -65,4 +67,6 @@ public static class EventoMappingExtensions
 
         throw new FormatException("Los campos Fecha y Hora son obligatorios.");
     }
+    #endregion
+
 }

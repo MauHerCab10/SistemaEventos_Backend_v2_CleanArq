@@ -106,7 +106,7 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
         }, cancellationToken);
     }
 
-
+    #region Métodos PRIVADOS
     private static Usuario MapUsuario(DbDataReader reader)
     {
         return new Usuario
@@ -122,5 +122,6 @@ public class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
             GuidActivo = Convert.ToBoolean(reader["EstaActivo"])
         };
     }
+    #endregion
 
 }

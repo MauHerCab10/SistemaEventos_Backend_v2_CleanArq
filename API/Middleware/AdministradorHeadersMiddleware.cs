@@ -126,6 +126,7 @@ public class AdministradorHeadersMiddleware
         }
     }
 
+    #region Métodos PRIVADOS
     //Método encargado de extraer el AccessToken del header Authorization, validando q el formato sea correcto (Bearer {token})
     private static string? GetAccessToken(HttpContext context)
     {
@@ -173,5 +174,6 @@ public class AdministradorHeadersMiddleware
 
         context.User = principal;
     }
+    #endregion
 
 }

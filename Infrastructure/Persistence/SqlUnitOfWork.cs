@@ -3,9 +3,9 @@ using SistemaEventos.Application.Interfaces.Persistence;
 
 namespace SistemaEventos.Infrastructure.Persistence;
 
-//Patrón de diseño "Unit of Work". Su objetivo es ejecutar una o varias operaciones de repositorio dentro de una misma conexión SQL y una misma transacción, para que todo se confirme si transcurre bien o se revierta si algo falla.
+//Patrón de diseño "Unit of Work". Su objetivo es ejecutar una o varias operaciones de repositorio dentro de una misma conexión SQL y una misma transacción, para q se confirme si todo transcurre bien o se revierta todo si algo falla
 //Si falla algo, se revierte todo. O se guarda todo o no se guarda nada. Además, al compartir la misma conexión y transacción, se mejora el rendimiento al reducir la sobrecarga de estar abriendo y cerrando múltiples conexiones por cada operación
-//Permite q la transacción sea ACID (Atomicidad, Consistencia, Aislamiento y Durabilidad) en las operaciones de la BD, lo que garantiza q los datos se mantengan íntegros y confiables incluso en situaciones de error o concurrencia
+//Permite q la transacción sea ACID (Atomicidad, Consistencia, Aislamiento y Durabilidad) en las operaciones de la BD, lo q garantiza q los datos se mantengan íntegros y confiables incluso en situaciones de error o concurrencia
 public class SqlUnitOfWork : IUnitOfWork
 {
     private readonly SqlConnectionContext _connectionContext;

@@ -49,14 +49,16 @@ public class CookieService : ICookieService
         });
     }
 
-    //
+
+    #region Métodos PRIVADOS
+    //Método auxiliar para obtener el HttpContext actual, lanzando una excepción si no está disponible
     private HttpContext GetHttpContext()
     {
         return _httpContextAccessor.HttpContext
-            ?? throw new InvalidOperationException("No HttpContext available.");
+            ?? throw new InvalidOperationException("No hay HttpContext disponible.");
     }
 
-    //
+    //Método para configurar las opciones de la cookie
     private static CookieOptions BuildCookieOptions(int expirationMinutes)
     {
         return new CookieOptions
@@ -68,4 +70,6 @@ public class CookieService : ICookieService
             Path = "/"
         };
     }
+    #endregion
+
 }
