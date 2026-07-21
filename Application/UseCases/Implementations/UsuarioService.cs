@@ -291,7 +291,7 @@ public class UsuarioService : IUsuarioService
             var existeUsuario = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (existeUsuario is not null)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("El correo electronico proporcionado ya se encuentra registrado en el sistema. Por favor acceda con otra cuenta.");
+                return Respuesta<UsuarioResponseDTO>.Fail("El correo electrónico proporcionado ya se encuentra registrado en el sistema. Por favor acceda con otra cuenta.");
             }
 
             var fechaActual = _dateTimeProvider.ObtenerDateTimeActual();
