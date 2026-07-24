@@ -59,7 +59,6 @@ public class UsuarioService : IUsuarioService
                 return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
             }
 
-            var contrasenaValidada = _passwordHasher.VerificarContrasena(DTOUsuario.Contrasena, usuarioEncontrado.ContrasenaHash);
             if (!usuarioEncontrado.Confirmado && !usuarioEncontrado.Restablecer && !string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
             {
                 return Respuesta<UsuarioResponseDTO>.Fail($"Falta por confirmar su cuenta. Se envió un correo de solicitud de confirmación a '{DTOUsuario.Email}'.");
@@ -70,6 +69,7 @@ public class UsuarioService : IUsuarioService
                 return Respuesta<UsuarioResponseDTO>.Fail($"Se ha solicitado restablecer su cuenta. Favor revise la bandeja de su correo '{DTOUsuario.Email}'.");
             }
 
+            var contrasenaValidada = _passwordHasher.VerificarContrasena(DTOUsuario.Contrasena, usuarioEncontrado.ContrasenaHash);
             if (!contrasenaValidada)
             {
                 return Respuesta<UsuarioResponseDTO>.Fail("La contraseña no coincide con la que hay almacenada en el sistema.");
@@ -256,7 +256,6 @@ public class UsuarioService : IUsuarioService
                 return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
             }
 
-            var contrasenaValidada = _passwordHasher.VerificarContrasena(DTOUsuario.GoogleSub, usuarioEncontrado.ContrasenaHash);
             if (!usuarioEncontrado.Confirmado && !usuarioEncontrado.Restablecer && !string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
             {
                 return Respuesta<UsuarioResponseDTO>.Fail($"Falta por confirmar su cuenta. Se envió un correo de solicitud de confirmación a '{DTOUsuario.Email}'.");
