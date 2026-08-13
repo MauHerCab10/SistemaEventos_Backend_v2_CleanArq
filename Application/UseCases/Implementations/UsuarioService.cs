@@ -56,7 +56,7 @@ public class UsuarioService : IUsuarioService
             var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (usuarioEncontrado is null)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que está intentando acceder al sistema.");
             }
 
             if (!usuarioEncontrado.Confirmado && !usuarioEncontrado.Restablecer && !string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
@@ -253,7 +253,7 @@ public class UsuarioService : IUsuarioService
             var usuarioEncontrado = await _usuarioRepository.ConsultarUsuarioPorEmail(DTOUsuario.Email, cancellationToken);
             if (usuarioEncontrado is null)
             {
-                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar los datos con los que esta intentando acceder al sistema.");
+                return Respuesta<UsuarioResponseDTO>.Fail("No se encontraron coincidencias con esas credenciales. Favor revisar si la cuenta con la que está intentando acceder al sistema es la correcta.");
             }
 
             if (!usuarioEncontrado.Confirmado && !usuarioEncontrado.Restablecer && !string.IsNullOrEmpty(usuarioEncontrado.ContrasenaHash))
